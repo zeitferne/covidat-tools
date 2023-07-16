@@ -21,12 +21,12 @@ import matplotlib.ticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from seaborn import cm as sns_cm
 from collections import Counter
 from cycler import cycler
-from IPython.display import display, Markdown, HTML
+from IPython.display import display
 from contextlib import nullcontext
 
+from util import COLLECTROOT
 from covdata import *
 
 logger = logging.getLogger(__name__)
@@ -182,8 +182,8 @@ def setlocale(name):
             locale.setlocale(locale.LC_ALL, saved)
 
 
-ARCHIVE_ROOT = Path("coronaDAT/archive")
-ARCHIVE_PATCH_ROOT = Path("coronaDAT_patch")
+ARCHIVE_ROOT = COLLECTROOT / "covid/coronaDAT/archive"
+ARCHIVE_PATCH_ROOT = COLLECTROOT / "covid/ages_all"
 DATE_FMT = "%Y%m%d"
 
 
@@ -1447,7 +1447,7 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
 
                 # "Rund 52%" https://web.archive.org/web/20230110152232/https://abwassermonitoring.at/dashboard/
                 faelle.loc[~msk_erw, "Abwassersignal"] = faelle["Abwassersignal"] / (faelle["AnzEinwohner"] * 0.515)
-                
+
                 # "Mehr als 58%" https://abwassermonitoring.at/dashboard/
                 faelle.loc[msk_erw, "Abwassersignal"] = faelle["Abwassersignal"] / (faelle["AnzEinwohner"] * 0.582)
 
@@ -1461,7 +1461,7 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
             syncarea = faelle.query("Datum >= '2022-09-01' and Datum <= '2022-11-01'")
             maxabwi = syncarea["Abwasser_y"].idxmax()
             maxinz = syncarea.loc[
-                (syncarea.index >= maxabwi - timedelta(14)) & 
+                (syncarea.index >= maxabwi - timedelta(14)) &
                 (syncarea.index <= maxabwi + timedelta(14)), "inz"].max() * 2 # Guesstimate
             adj = maxinz / syncarea.loc[maxabwi, "Abwasser_y"]
             faelle["Abwasser_y"] = faelle["Abwasser_y"].where(faelle.index >= pd.to_datetime("2022-09-01"))

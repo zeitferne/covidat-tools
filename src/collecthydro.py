@@ -8,9 +8,10 @@ import lzma
 from itertools import zip_longest
 import util
 
-def collecthydro(prefixname, insubdir=False):
+def collecthydro(prefixname: str, insubdir: bool=False):
     subdir = "covid/abwassermonitoring"
     outname = util.COLLECTROOT / subdir / (prefixname + "_all.csv.xz")
+    outname.parent.mkdir(parents=True, exist_ok=True)
     with lzma.open(outname, "wt", encoding="utf-8", newline="\n", preset=1) as outfile:
         writer = csv.writer(outfile, delimiter=";")
         writer.writerow(["FileDate", "Datum", "name", "uwwcode", "y"])

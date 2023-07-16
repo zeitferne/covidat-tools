@@ -70,10 +70,15 @@ def load_azr():
         azr = pd.read_pickle(cachefile)
     except FileNotFoundError:
         logger.info("Regenerating ASP-Register cache...")
-        azr = pd.read_excel(util.DATAROOT / "basg-medicineshortage/ASP-Register.xlsx", header=0)
+        srcs = []
+        aspdir = util.DATAROOT / "basg-medicineshortage"
+        for srcname in aspdir.glob("ASP-Register_2*.xlsx"):
+            srcs.append(pd.read_excel(srcname, header=0))
+        azr = pd.concat(srcs)
         azr.to_pickle(cachefile)
         logger.info("Regenerated cache at %s", cachefile)
     azr["Zulassungsnummer"] = azr["Zulassungsnummer"].str.strip()
+    azr.drop_duplicates("Zulassungsnummer", keep="last", inplace=True)
     msk = azr["Zulassungsnummer"].str.match("EU/.+[-,]")
     azr0 = azr.loc[msk].copy()
     azr0["Zulassungsnummer"] = azr0["Zulassungsnummer"].str.replace(
@@ -254,10 +259,12 @@ def collectshortage_ex(dirname, outname):
 
 
 def main():
-    collectshortage(util.DATAROOT / "basg-medicineshortage", util.COLLECTROOT / "medshort/medshort.csv")
-    collectshortage_ex(
-        util.DATAROOT / "basg-medicineshortage", util.COLLECTROOT / "medshort/medshort_ex.csv"
-    )
+    collectdir =  util.COLLECTROOT / "medshort"
+    collectdir.mkdir(parents=True, exist_ok=True)
+    datadir = util.DATAROOT / "basg-medicineshortage"
+
+    collectshortage(datadir, collectdir / "medshort.csv")
+    collectshortage_ex(datadir, collectdir / "medshort_ex.csv")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,5 @@
+# Minimal requirements file used for bootstrapping the bot that reported daily deaths
+
+pandas~=1.5.0
+tweepy~=4.10
+numpy~=1.23.0

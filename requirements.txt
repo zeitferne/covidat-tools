@@ -9,3 +9,4 @@ lxml~=4.9.3
 beautifulsoup4~=4.12.2
 openpyxl~=3.0.10
 xlrd~=2.0.1
+nbconvert~=7.7.1

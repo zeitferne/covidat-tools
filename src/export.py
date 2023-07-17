@@ -26,7 +26,7 @@ def main():
 
 
 
-    output_dir = "gh-pages"
+    output_dir = "gh-pages/export"
     if os.path.exists(output_dir):
         rmtree(output_dir)
     os.mkdir(output_dir)

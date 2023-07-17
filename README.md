@@ -1,6 +1,21 @@
 # covidat-tools
 
-Tooling for use with [covidat-data](https://github.com/zeitferne/covidat-data).
+> 📊 Die Notebooks inklusive Diagrammen werden unregelmäßig
+> aktualisiert und sind hier abrufbar:
+>
+> * [covidat - Sammelsurium mit eh allem](https://zeitferne.github.io/covidat-tools/export/covidat.html)
+> * [Misc - Medikamentenmangel & Krankenstände](https://zeitferne.github.io/covidat-tools/export/Misc.html)
+>
+> Es ist auch der Code enthalten -- einfach Scrollen bis man zu den bunten
+> Bildern kommt. Obwohl zugebenermaßen nicht alle ohne weiteren Kontext
+> verständlich sind. Bei Fragen bitte Kontakt aufnehmen (über die Social Media
+> Links im GitHub Profil oder auch einen Issue).
+>
+> Der tatsächliche Quellcode der Notebooks ist im
+> [notebooks](notebooks/)-Verzeichnis.
+
+Tooling (Python scripts) and Jupyter/IPython notebooks for use with
+[covidat-data](https://github.com/zeitferne/covidat-data)
 
 This project started as a quick hack and was never properly cleaned up. Yes,
 it's a complete and utter mess!

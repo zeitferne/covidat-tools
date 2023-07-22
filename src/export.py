@@ -32,15 +32,18 @@ def main():
     os.mkdir(output_dir)
 
     for nbfile in Path(".").glob("*.ipynb"):
+        no_input = b"#@export: --no-input" in nbfile.read_bytes()[:16_000]
+
         exportargs =  [
             which("jupyter"),
             "nbconvert",
             "--to=html",
-            #"--no-input",
             "--ExtractOutputPreprocessor.enabled=true",
             "--output-dir=" + output_dir,
             str(nbfile),
         ]
+        if no_input:
+            exportargs.append("--no-input")
         if args.execute:
             exportargs.append("--execute")
         check_call(exportargs)

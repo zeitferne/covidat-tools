@@ -1,4 +1,6 @@
 import pandas as pd
+from dataclasses import dataclass
+from util import COLLECTROOT
 
 AGES_DATE_FMT = "%d.%m.%Y"
 HMS_TIME = "%H:%M:%S"
@@ -7,6 +9,18 @@ ISO_DATE_FMT = "%Y-%m-%d"
 ISO_SP_TIME_FMT = f"{ISO_DATE_FMT} {HMS_TIME}"
 ISO_TIME_FMT = f"{ISO_DATE_FMT}T{HMS_TIME}"
 ISO_TIME_TZ_FMT = f"{ISO_TIME_FMT}%z"
+
+def load_ww_blverlauf() -> pd.DataFrame:
+    blverlauf = pd.read_csv(COLLECTROOT / "covid/abwassermonitoring/blverlauf_all.csv.xz",
+                        sep=";", parse_dates=["FileDate", "Datum"])
+    blverlauf.rename(columns={"name": "Bundesland"}, inplace=True, errors="raise")
+    return blverlauf
+
+def first_filedate(df: pd.DataFrame, catcols: list[str]) -> pd.DataFrame:
+    return (df
+        .sort_values("FileDate", kind="stable")
+        .groupby(["Datum"] + catcols)
+        .first())
 
 def add_date(df: pd.DataFrame, colname: str, format=None) -> pd.DataFrame:
     df["Datum"] = pd.to_datetime(df[colname], dayfirst=True, format=format, exact=format is not None)

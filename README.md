@@ -3,8 +3,10 @@
 > 📊 Die Notebooks inklusive Diagrammen werden unregelmäßig
 > aktualisiert und sind hier abrufbar:
 >
-> * [covidat - Sammelsurium mit eh allem](https://zeitferne.github.io/covidat-tools/export/covidat.html)
-> * [Misc - Medikamentenmangel & Krankenstände](https://zeitferne.github.io/covidat-tools/export/Misc.html)
+> * [monitoring](https://zeitferne.github.io/covidat-tools/export/monitoring.html):
+>   SARS-CoV-2-Abwassermonitoring, Krankenstände, Medikamentenmangel. Wird (un)regelmäßig aktualisiert.
+> * [covidat-old](https://zeitferne.github.io/covidat-tools/export/covidat-old.html):
+>   Auswertungen zu COVID-19 aus den eingestellten EMS-Daten. Keine weiteren Aktualisierungen zu erwarten.
 >
 > Es ist auch der Code enthalten -- einfach Scrollen bis man zu den bunten
 > Bildern kommt. Obwohl zugebenermaßen nicht alle ohne weiteren Kontext

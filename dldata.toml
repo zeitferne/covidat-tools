@@ -4,96 +4,96 @@ default_file_extension = ".json"
 
 # covid/
 
-    [[dlsets]]
-    enable = false
-    urls = ["https://covid19-dashboard.ages.at/data/data.zip"]
-    archive_headers = true
-    extract_date = "ages_versiondate"
-    dir = ""
-    sortdir_fmt = "%Y%m%d"
-    fname_format = "ages-dashboard-{}"
+  [[dlsets]]
+  enable = false
+  urls = ["https://covid19-dashboard.ages.at/data/data.zip"]
+  archive_headers = true
+  extract_date = "ages_versiondate"
+  dir = ""
+  sortdir_fmt = "%Y%m%d"
+  fname_format = "ages-dashboard-{}"
 
-    [[dlsets]]
-    preset = "abwasser"
-    urls = [
-        "https://abwassermonitoring.at/cbe1/natmon_01",
-        "https://abwassermonitoring.at/cbe1/natmon_02",
-        "https://abwassermonitoring.at/cbe1/dl_natmon_01.csv",
-    ]
-    sortdir_fmt = "%Y"
+  [[dlsets]]
+  preset = "abwasser"
+  urls = [
+    "https://abwassermonitoring.at/cbe1/natmon_01",
+    "https://abwassermonitoring.at/cbe1/natmon_02",
+    "https://abwassermonitoring.at/cbe1/dl_natmon_01.csv",
+  ]
+  sortdir_fmt = "%Y"
 
-    [[dlsets]]
-    preset = "abwasser"
-    urls = [
-        "https://abwassermonitoring.at/cbe1/blverlauf", # TODO: redundant, aber collecthydro unterstützt das csv noch nicht.
-        "https://abwassermonitoring.at/cbe1/dl_blverlauf.csv",
-    ]
-    sortdir_fmt = "%Y/blverlauf"
+  [[dlsets]]
+  preset = "abwasser"
+  urls = [
+    "https://abwassermonitoring.at/cbe1/blverlauf", # TODO: redundant, aber collecthydro unterstützt das csv noch nicht.
+    "https://abwassermonitoring.at/cbe1/dl_blverlauf.csv",
+  ]
+  sortdir_fmt = "%Y/blverlauf"
 
-    [[dlsets]]
-    urls = [
-        "https://www.ages.at/fileadmin/Corona/Reinfektionen/Reinfektionen.csv",      # Kein Update mehr (kommentarlos)
-        "https://www.ages.at/fileadmin/Corona/Epidemiologische-Parameter/R_eff.csv", # Kein Update mehr zu erwarten
-        #"https://wissenaktuell.ages.at/fileadmin/AGES2015/Wissen-Aktuell/COVID19/R_eff.csv", # URL geändert, s.u.
-        #"https://www.ages.at/fileadmin/AGES2015/Themen/Krankheitserreger_Dateien/Coronavirus/Inzidenz_Impfstatus/Inzidenz_Impfstatus_60plus.csv",
-        #"https://www.ages.at/fileadmin/AGES2015/Themen/Krankheitserreger_Dateien/Coronavirus/Inzidenz_Impfstatus/Inzidenz_Impfstatus_Erkrankte_60__Jahre.csv",
-    ]
-    dir = "covid/ages-ems-extra"
+  [[dlsets]]
+  urls = [
+    "https://www.ages.at/fileadmin/Corona/Reinfektionen/Reinfektionen.csv",    # Kein Update mehr (kommentarlos)
+    "https://www.ages.at/fileadmin/Corona/Epidemiologische-Parameter/R_eff.csv", # Kein Update mehr zu erwarten
+    #"https://wissenaktuell.ages.at/fileadmin/AGES2015/Wissen-Aktuell/COVID19/R_eff.csv", # URL geändert, s.u.
+    #"https://www.ages.at/fileadmin/AGES2015/Themen/Krankheitserreger_Dateien/Coronavirus/Inzidenz_Impfstatus/Inzidenz_Impfstatus_60plus.csv",
+    #"https://www.ages.at/fileadmin/AGES2015/Themen/Krankheitserreger_Dateien/Coronavirus/Inzidenz_Impfstatus/Inzidenz_Impfstatus_Erkrankte_60__Jahre.csv",
+  ]
+  dir = "covid/ages-ems-extra"
 
-    [[dlsets]]
-    urls = [
-        "https://www.ages.at/fileadmin/Corona/Wochenbericht/Varianten_Verteilung.csv",
-        "https://www.ages.at/fileadmin/Corona/Wochenbericht/Varianten_gesamt_KW.csv",
-        "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/coronavirus",
-    ]
-    dir = "covid/ages-varianten"
+  [[dlsets]]
+  urls = [
+    "https://www.ages.at/fileadmin/Corona/Wochenbericht/Varianten_Verteilung.csv",
+    "https://www.ages.at/fileadmin/Corona/Wochenbericht/Varianten_gesamt_KW.csv",
+    "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/coronavirus",
+  ]
+  dir = "covid/ages-varianten"
 
-    [[dlsets]]
-    urls = [
-        "https://www.ages.at/fileadmin/Corona/Wochenbericht/timeline-testungen-bundeslaender.csv",
-        "https://www.ages.at/fileadmin/Corona/Wochenbericht/timeline-testungen-apotheken-betriebe.csv",
-    ]
-    dir = "covid/morgenmeldung"
-    archive = false
+  [[dlsets]]
+  urls = [
+    "https://www.ages.at/fileadmin/Corona/Wochenbericht/timeline-testungen-bundeslaender.csv",
+    "https://www.ages.at/fileadmin/Corona/Wochenbericht/timeline-testungen-apotheken-betriebe.csv",
+  ]
+  dir = "covid/morgenmeldung"
+  archive = false
 
 
-    [[dlsets]]
-    urls = [
-        "https://www.virologie.meduniwien.ac.at/fileadmin/virologie/files/Sars/sars_bundesland_2020.jpg",
-        "https://www.virologie.meduniwien.ac.at/fileadmin/virologie/files/Sars/sars_woche_2020.jpg"
-    ]
-    dir = "covid/meduniwien"
+  [[dlsets]]
+  urls = [
+    "https://www.virologie.meduniwien.ac.at/fileadmin/virologie/files/Sars/sars_bundesland_2020.jpg",
+    "https://www.virologie.meduniwien.ac.at/fileadmin/virologie/files/Sars/sars_woche_2020.jpg"
+  ]
+  dir = "covid/meduniwien"
 
 # other
 
-    [[dlsets]]
-    urls = [
-        "https://www.ages.at/download/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE2MDk0NTkyMDAsImV4cCI6NDA3MDkwODgwMCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW5cL0FHRVNfMjAyMlwvMl9NRU5TQ0hcL0tyYW5raGVpdFwvS3JhbmtoZWl0c2VycmVnZXJcL01hc2VyblwvTWFzZXJuX1RhYmVsbGUuY3N2IiwicGFnZSI6MjUyOH0.nau1aB33Aa1_AhnX7HPf9GPOzpKA_u_qsnQmxEyTvEM/Masern_Tabelle.csv",
-        "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/masern",
-        "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/pneumokokken",
-        "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/grippe",
-    ]
-    dir = "ages-epi-misc"
+  [[dlsets]]
+  urls = [
+    "https://www.ages.at/download/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE2MDk0NTkyMDAsImV4cCI6NDA3MDkwODgwMCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW5cL0FHRVNfMjAyMlwvMl9NRU5TQ0hcL0tyYW5raGVpdFwvS3JhbmtoZWl0c2VycmVnZXJcL01hc2VyblwvTWFzZXJuX1RhYmVsbGUuY3N2IiwicGFnZSI6MjUyOH0.nau1aB33Aa1_AhnX7HPf9GPOzpKA_u_qsnQmxEyTvEM/Masern_Tabelle.csv",
+    "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/masern",
+    "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/pneumokokken",
+    "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/grippe",
+  ]
+  dir = "ages-epi-misc"
 
-    [[dlsets]]
-    urls = [
-        "https://www.basg.gv.at/fileadmin/uploadVERE/VertriebseinschraenkungenASP.xml",
-    ]
-    dir = "basg-medicineshortage"
+  [[dlsets]]
+  urls = [
+    "https://www.basg.gv.at/fileadmin/uploadVERE/VertriebseinschraenkungenASP.xml",
+  ]
+  dir = "basg-medicineshortage"
 
-    [[dlsets]]
-    enable = false
-    urls = [
-        "https://medicineshortage.basg.gv.at/vertriebseinschraenkungen/faces/adf.task-flow?_id=main-btf&_document=WEB-INF/main-btf.xml",
-    ]
-    extract_date = "medshort_updatedate"
-    dir = "basg-medicineshortage"
+  [[dlsets]]
+  enable = false
+  urls = [
+    "https://medicineshortage.basg.gv.at/vertriebseinschraenkungen/faces/adf.task-flow?_id=main-btf&_document=WEB-INF/main-btf.xml",
+  ]
+  extract_date = "medshort_updatedate"
+  dir = "basg-medicineshortage"
 
-    [[dlsets]]
-    enable = false # Monatlich publiziert, manuell einschalten
-    urls = [
-        "https://data.statistik.gv.at/data/OGD_gest_kalwo_alter_GEST_KALWOCHE_5J_100.csv",
-        "https://data.statistik.gv.at/data/OGD_rate_kalwo_GEST_KALWOCHE_STR_100.csv",
-        "https://data.statistik.gv.at/data/OGD_gest_kalwo_GEST_KALWOCHE_100.csv",
-    ]
-    dir = "statat-weekly-deaths"
+  [[dlsets]]
+  enable = false # Monatlich publiziert, manuell einschalten
+  urls = [
+    "https://data.statistik.gv.at/data/OGD_gest_kalwo_alter_GEST_KALWOCHE_5J_100.csv",
+    "https://data.statistik.gv.at/data/OGD_rate_kalwo_GEST_KALWOCHE_STR_100.csv",
+    "https://data.statistik.gv.at/data/OGD_gest_kalwo_GEST_KALWOCHE_100.csv",
+  ]
+  dir = "statat-weekly-deaths"

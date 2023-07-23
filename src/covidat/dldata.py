@@ -1,35 +1,36 @@
 #!/usr/bin/env python3
 
 import argparse
+import csv
+import io
 import locale
 import logging
 import lzma
+import mimetypes
 import re
-import sys
-from typing import Any, Optional, Tuple
-from collections.abc import Callable
+import tomllib
 import typing
-from urllib.parse import urlparse
-from zipfile import ZipFile
+import urllib.response
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from os.path import basename
-import csv
-import io
 from pathlib import Path, PurePath, PurePosixPath
-import urllib.response
-import mimetypes
-import tomllib
-from .dlutil import dl_with_header_cache, write_hdr_file, get_moddate
-from .util import DL_TSTAMP_FMT, DATAROOT
+from typing import Any
+from urllib.parse import urlparse
+from zipfile import ZipFile
+
+from .dlutil import dl_with_header_cache, get_moddate, write_hdr_file
+from .util import DATAROOT, DL_TSTAMP_FMT
 
 logger = logging.getLogger(__name__)
-DateExtractor = Callable[[urllib.response.addinfourl, bytes], Optional[datetime]]
+DateExtractor = Callable[[urllib.response.addinfourl, bytes], datetime | None]
 _date_extractors: dict[str, DateExtractor] = {}
 
 
 def date_extractor(fn: DateExtractor):
     if fn.__name__ in _date_extractors:
-        raise ValueError(f"The name {fn.__name__} is already registered")
+        msg = f"The name {fn.__name__} is already registered"
+        raise ValueError(msg)
     _date_extractors[fn.__name__] = fn
     return fn
 
@@ -83,9 +84,9 @@ def dl_url(
     # separators
     fname_format: str = "{}",
     sortdir_fmt: str = "",
-    extract_date: Optional[DateExtractor] = None,
+    extract_date: DateExtractor | None = None,
     dry_run: bool,
-) -> Optional[Exception]:
+) -> Exception | None:
     fname = PurePosixPath(urlparse(url).path).name
     fstem, fext = splitbasestem(fname)
     fext = fext or default_file_extension
@@ -104,9 +105,7 @@ def dl_url(
         if not ok:
             status = getattr(resp, "status", "")
             if status == 304 and oldheaders:
-                logger.info(
-                    "H 304 %s (Kept: %s)", url, olddate or oldheaders.get("Etag")
-                )
+                logger.info("H 304 %s (Kept: %s)", url, olddate or oldheaders.get("Etag"))
             else:
                 logger.warning("E %s %s %r", status, url, resp)
             return None
@@ -114,7 +113,7 @@ def dl_url(
 
         data = resp.read()
 
-        def fpath_from_resp(resp) -> Tuple[Path, str]:
+        def fpath_from_resp(resp) -> tuple[Path, str]:
             hdrs = resp.headers
             ts = None
             if extract_date is not None:
@@ -134,9 +133,7 @@ def dl_url(
             write_hdr_file(resp.headers, hdrfilepath)
 
         def simpname(fpath: Path):
-            return olddate or splitbasestem(fpath.name)[0].removeprefix(fstem).strip(
-                "_"
-            )
+            return olddate or splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
 
         newpath, fext = fpath_from_resp(resp) if archive else (dldir / fname, fext)
         if archive and newpath.exists():
@@ -169,16 +166,12 @@ def dl_url(
                 commit_headers()  # Update headers (might contain etag/last-modified)
                 return None
             if newpath.exists():
-                raise FileExistsError(
-                    "Target exists but has different content:" + str(newpath)
-                )
+                raise FileExistsError("Target exists but has different content:" + str(newpath))
             dlpath.rename(newpath)
         else:
             dlpath.replace(newpath)
         if archive_headers:
-            write_hdr_file(
-                resp.headers, newdir / (newpath.stem + "_hdr.txt"), allow_existing=False
-            )
+            write_hdr_file(resp.headers, newdir / (newpath.stem + "_hdr.txt"), allow_existing=False)
         relpath = newpath.relative_to(DATAROOT)
         logger.info(
             "Dowloaded %s %s",
@@ -200,27 +193,21 @@ def dl_url(
 
 
 @date_extractor
-def ages_versiondate(
-    resp: urllib.response.addinfourl, data: bytes
-) -> Optional[datetime]:
+def ages_versiondate(resp: urllib.response.addinfourl, data: bytes) -> datetime | None:
     try:
-        with io.BytesIO(data) as data_io, ZipFile(data_io) as zf, zf.open(
-            "Version.csv"
-        ) as verfile, io.TextIOWrapper(verfile, encoding="utf-8") as verfile_s:
+        with io.BytesIO(data) as data_io, ZipFile(data_io) as zf, zf.open("Version.csv") as verfile, io.TextIOWrapper(
+            verfile, encoding="utf-8"
+        ) as verfile_s:
             ver = next(iter(csv.DictReader(verfile_s, delimiter=";")))["CreationDate"]
     except Exception as exc:
         md = get_moddate(resp.headers)
-        logger.error(
-            "Failed extract version, using Last-Modified %s date - 2h", md, exc_info=exc
-        )
+        logger.error("Failed extract version, using Last-Modified %s date - 2h", md, exc_info=exc)
         return md - timedelta(hours=2) if md is not None else None
     return datetime.strptime(ver, "%d.%m.%Y %H:%M:%S")
 
 
 @date_extractor
-def medshort_updatedate(
-    resp: urllib.response.addinfourl, data: bytes
-) -> Optional[datetime]:
+def medshort_updatedate(resp: urllib.response.addinfourl, data: bytes) -> datetime | None:
     # Daten zuletzt aktualisiert am: 2022-12-10 00:31:12
     tmatch = re.search(rb"aktualisiert am: ([0-9-]+ [0-9:]+)", data)
     if not tmatch:
@@ -317,9 +304,7 @@ def main() -> None:
     with open(args.config_path, "rb") as cfgfile:
         cfg = tomllib.load(cfgfile)
     tag_map = {t: True for t in args.enable_tags} if args.enable_tags else {}
-    execute_config(
-        cfg, only_archivable=args.only_archivable, tag_map=tag_map, dry_run=args.dry_run
-    )
+    execute_config(cfg, only_archivable=args.only_archivable, tag_map=tag_map, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

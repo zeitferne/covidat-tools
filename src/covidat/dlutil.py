@@ -1,16 +1,16 @@
-from email.utils import parsedate_to_datetime
-from email.message import Message
 import os
 import ssl
-from http import HTTPStatus
-from http.client import HTTPMessage, parse_headers
-from typing import Optional, Tuple, Union
 import typing
-from urllib.error import HTTPError
-from urllib.request import Request, urlopen
 import urllib.response
 from datetime import datetime
+from email.message import Message
+from email.utils import parsedate_to_datetime
+from http import HTTPStatus
+from http.client import HTTPMessage, parse_headers
 from logging import getLogger
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
 from .util import Openable
 
 logger = getLogger(__name__)
@@ -44,14 +44,14 @@ to a closely monitored / your main inbox).
 """
 
 
-def get_moddate(hdrs: Message) -> Optional[datetime]:
+def get_moddate(hdrs: Message) -> datetime | None:
     dt = hdrs.get("Last-Modified") or hdrs.get("Date")
     return parsedate_to_datetime(typing.cast(str, dt)) if dt else None
 
 
 def dl_if_not_modified(
-    url: str, lastheaders: Optional[Message], dry_run: bool = False
-) -> Tuple[bool, Union[HTTPError, urllib.response.addinfourl]]:
+    url: str, lastheaders: Message | None, dry_run: bool = False
+) -> tuple[bool, HTTPError | urllib.response.addinfourl]:
     reqheaders = {
         "From": FROM_EMAIL,
     }
@@ -80,7 +80,7 @@ def dl_if_not_modified(
     return True, resp
 
 
-def _read_header_file(hdrfilepath: Openable) -> Optional[HTTPMessage]:
+def _read_header_file(hdrfilepath: Openable) -> HTTPMessage | None:
     try:
         hdrf = open(hdrfilepath, "rb")
     except FileNotFoundError:
@@ -89,16 +89,14 @@ def _read_header_file(hdrfilepath: Openable) -> Optional[HTTPMessage]:
         return parse_headers(hdrf)
 
 
-def write_hdr_file(
-    resp_headers: Message, ofilepath: Openable, allow_existing=True
-) -> None:
+def write_hdr_file(resp_headers: Message, ofilepath: Openable, allow_existing=True) -> None:
     with open(ofilepath, "wb" if allow_existing else "xb") as of:
         of.write(resp_headers.as_bytes())
 
 
 def dl_with_header_cache(
     url: str, hdrfilepath: Openable, dry_run: bool = False
-) -> Tuple[bool, Union[HTTPError, urllib.response.addinfourl], Optional[HTTPMessage]]:
+) -> tuple[bool, HTTPError | urllib.response.addinfourl, HTTPMessage | None]:
     hdrs = _read_header_file(hdrfilepath)
     if not hdrs:
         logger.info("Could not read headers at %s (URL: %s)", hdrfilepath, url)

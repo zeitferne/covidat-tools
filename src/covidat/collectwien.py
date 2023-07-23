@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import csv
-import util
+from . import util
 import html
 from itertools import chain
 import re

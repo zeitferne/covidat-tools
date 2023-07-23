@@ -19,8 +19,8 @@ from pathlib import Path, PurePath, PurePosixPath
 import urllib.response
 import mimetypes
 import tomllib
-from dlutil import dl_with_header_cache, write_hdr_file, get_moddate
-from util import DL_TSTAMP_FMT, DATAROOT
+from .dlutil import dl_with_header_cache, write_hdr_file, get_moddate
+from .util import DL_TSTAMP_FMT, DATAROOT
 
 logger = logging.getLogger(__name__)
 DateExtractor = Callable[[urllib.response.addinfourl, bytes], Optional[datetime]]

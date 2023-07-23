@@ -26,8 +26,8 @@ from cycler import cycler
 from IPython.display import display
 from contextlib import nullcontext
 
-from util import COLLECTROOT
-from covdata import *
+from .util import COLLECTROOT
+from .covdata import *
 
 logger = logging.getLogger(__name__)
 

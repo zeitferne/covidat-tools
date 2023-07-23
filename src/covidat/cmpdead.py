@@ -20,13 +20,20 @@ from zipfile import ZipFile
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
-from covdata import SHORTNAME2_BY_BUNDESLAND, add_date, AGES_TIME_FMT, shorten_bezname
+from .covdata import SHORTNAME2_BY_BUNDESLAND, add_date, AGES_TIME_FMT, shorten_bezname
 from itertools import repeat
 import locale
 import logging
-from util import Openable, COLLECTROOT
+from .util import Openable, COLLECTROOT
 import os
-import tweepy  # type: ignore
+import sys
+try:
+    from tweepy import Client  # type: ignore
+except ModuleNotFoundError as exc:
+    Client = None
+    tweepy_error = exc
+else:
+    tweepy_error = None
 
 logger = logging.getLogger(__name__)
 
@@ -713,7 +720,7 @@ class BotStateIo(ABC):
         pass
 
     @abstractmethod
-    def get_twitter_client(self) -> tweepy.Client:
+    def get_twitter_client(self) -> Client:
         pass
 
     @abstractmethod
@@ -733,7 +740,7 @@ class InMemoryBotStateIo(BotStateIo):
             raise FileExistsError("State already exists " + repr(self.persisted_state))
         self.persisted_state = state
 
-    def get_twitter_client(self) -> tweepy.Client:
+    def get_twitter_client(self) -> Client:
         raise NotImplementedError("Cannot actually tweet with InMemoryBotStateIo")
 
     def dump_result(self, dumpinfo: str) -> None:
@@ -761,7 +768,7 @@ class ProdBotStateIo(BotStateIo):
         ) as statef:
             json.dump(statedata, statef, indent=2)
 
-    def get_twitter_client(self) -> tweepy.Client:
+    def get_twitter_client(self) -> Client:
         creds = {}
         for cred_part in (
             "consumer_key",
@@ -774,7 +781,7 @@ class ProdBotStateIo(BotStateIo):
             if not part:
                 raise ValueError("Missing credential part: " + key)
             creds[cred_part] = part
-        return tweepy.Client(**creds)
+        return Client(**creds)
 
     def dump_result(self, dumpinfo: str) -> None:
         OUTFILENAME = "botout.txt"
@@ -853,6 +860,8 @@ def main() -> None:
     elif args.cmd == "test":
         run_test(args.count)
     elif args.cmd == "runbot":
+        if tweepy_error is not None:
+            sys.exit(f"runbot command unailable: {type(tweepy_error).__qualname__}: {tweepy_error}")
         run_bot(ProdBotStateIo(), args.new)
     else:
         parser.error("Unknown command")

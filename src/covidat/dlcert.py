@@ -15,8 +15,8 @@ import sys
 from http.client import HTTPSConnection
 from urllib.parse import urlsplit
 import glob
-import dlutil
-import util
+from . import dlutil
+from . import util
 
 CERT_DATA_URL_FMT = "https://info.gesundheitsministerium.gv.at/data/archiv/COVID19_vaccination_municipalities_%Y%m%d.csv"
 CERT_DATA_AG_URL_FMT = "https://info.gesundheitsministerium.at/data/archiv/COVID19_vaccination_doses_agegroups_%Y%m%d.csv"

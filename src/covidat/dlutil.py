@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 import urllib.response
 from datetime import datetime
 from logging import getLogger
-from util import Openable
+from .util import Openable
 
 logger = getLogger(__name__)
 

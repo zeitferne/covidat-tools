@@ -6,7 +6,7 @@ from pathlib import Path
 import csv
 import lzma
 from itertools import zip_longest
-import util
+from . import util
 
 def collecthydro(prefixname: str, insubdir: bool=False):
     subdir = "covid/abwassermonitoring"

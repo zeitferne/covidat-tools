@@ -6,8 +6,8 @@ from pathlib import Path
 from shutil import copyfileobj
 import sys
 from urllib.error import HTTPError
-import dlutil
-import util
+from . import dlutil
+from . import util
 
 from typing import Optional
 

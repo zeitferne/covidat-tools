@@ -1,0 +1,185 @@
+[build-system]
+requires = ["hatchling>=1.7"]
+build-backend = "hatchling.build"
+
+[project]
+name = "covidat"
+dynamic = ["version"]
+description = 'Tooling for covidat-data'
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+keywords = []
+authors = [
+  { name = "Christian", email = "138394851+zeitferne@users.noreply.github.com" },
+]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+  "pandas~=2.0.3",
+  "dateparser~=1.1.4",
+  "lxml~=4.9.3",
+  "beautifulsoup4~=4.12.2",
+  "openpyxl~=3.0.10",
+  "xlrd~=2.0.1",
+]
+
+[project.optional-dependencies]
+notebooks = [
+  "colorcet~=3.0.1",
+  "matplotlib~=3.7.2",
+  "seaborn~=0.12.2",
+  "scipy~=1.11.1",
+  "jupyterlab~=4.0.3",
+  "nbconvert~=7.7.2"
+]
+
+[project.scripts]
+dldata = "covidat.dldata:main"
+collectshortage = "covidat.collectshortage:main"
+collecthydro = "covidat.collecthydro:main"
+collectsvat = "covidat.collectsvat:main"
+
+[project.urls]
+Documentation = "https://github.com/zeitferne/covidat-tools#readme"
+Issues = "https://github.com/zeitferne/covidat-tools/issues"
+Source = "https://github.com/zeitferne/covidat-tools"
+
+[tool.hatch.version]
+path = "src/covidat/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/covidat"]
+
+[tool.hatch.envs.default]
+dependencies = [
+  "coverage[toml]>=6.5",
+  "pytest",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = [
+  "- coverage combine",
+  "coverage report",
+]
+cov = [
+  "test-cov",
+  "cov-report",
+]
+
+[tool.hatch.envs.notebooks]
+template = "notebooks"
+features = ["notebooks"]
+
+[tool.hatch.envs.notebooks.scripts]
+serve = "jupyter lab notebooks/monitoring.ipynb"
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.11"]
+
+[tool.hatch.envs.lint]
+detached = true
+dependencies = [
+  "black>=23.1.0",
+  "mypy>=1.0.0",
+  "ruff>=0.0.243",
+]
+[tool.hatch.envs.lint.scripts]
+typing = "mypy --install-types --non-interactive {args:src/covidat tests}"
+style = [
+  "ruff {args:.}",
+  "black --check --diff {args:.}",
+]
+fmt = [
+  "black {args:.}",
+  "ruff --fix {args:.}",
+  "style",
+]
+all = [
+  "style",
+  "typing",
+]
+
+[tool.black]
+target-version = ["py311"]
+line-length = 120
+skip-string-normalization = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+select = [
+  "A",
+  "ARG",
+  "B",
+  "C",
+  "DTZ",
+  "E",
+  "EM",
+  "F",
+  "FBT",
+  "I",
+  "ICN",
+  "ISC",
+  "N",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "Q",
+  "RUF",
+  "S",
+  "T",
+  "TID",
+  "UP",
+  "W",
+  "YTT",
+]
+ignore = [
+  # Allow non-abstract empty methods in abstract base classes
+  "B027",
+  # Allow boolean positional values in function calls, like `dict.get(... True)`
+  "FBT003",
+  # Ignore checks for possible passwords
+  "S105", "S106", "S107",
+  # Ignore complexity
+  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+]
+unfixable = [
+  #"F401",   # Don't touch unused imports
+]
+
+[tool.ruff.isort]
+known-first-party = ["covidat"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.coverage.run]
+source_pkgs = ["covidat", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/covidat/__about__.py",
+]
+
+[tool.coverage.paths]
+covidat = ["src/covidat", "*/covidat/src/covidat"]
+tests = ["tests", "*/covidat/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]

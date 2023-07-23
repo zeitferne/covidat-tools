@@ -12,7 +12,7 @@ from typing import Set
 import warnings
 import pandas as pd
 import logging
-import util
+from . import util
 
 logger = logging.getLogger(__name__)
 

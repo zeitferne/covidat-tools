@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
-import sys
+from http.client import HTTPSConnection, HTTPResponse
 from datetime import date, timedelta
-from http.client import HTTPSConnection
+from pathlib import Path
+from shutil import copyfileobj
+import sys
 from urllib.error import HTTPError
+from . import dlutil
+from . import util
 
-from . import dlutil, util
+from typing import Optional
 
 # NB: Need to manually add:
 # https://presse.wien.gv.at/presse/2022/10/10/aktualisiert-corona-virus-aktuelle-kennzahlen-der-stadt-wien
@@ -36,7 +40,10 @@ def requestkennzahlen_single(conn: HTTPSConnection, dt: date, lastfmt_idx: int) 
             is_notfound = False
             if resp.status == 200:
                 data = resp.read()
-                is_notfound = b"Internet-Adresse (URL) ist auf unserem Server nicht oder nicht mehr vorhanden" in data
+                is_notfound = (
+                    b"Internet-Adresse (URL) ist auf unserem Server nicht oder nicht mehr vorhanden"
+                    in data
+                )
                 if not is_notfound:
                     dirp.mkdir(exist_ok=True, parents=True)
                     with fpath.open("xb") as ofile:

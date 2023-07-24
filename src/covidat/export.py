@@ -1,11 +1,11 @@
+from pathlib import Path
+import re
+from subprocess import check_call
+from shutil import which, rmtree
 import os
 import os.path
-import re
 import subprocess
 from argparse import ArgumentParser
-from pathlib import Path
-from shutil import rmtree, which
-from subprocess import check_call
 
 
 def main():
@@ -24,6 +24,8 @@ def main():
     pdir = pdir.replace("/", r"[/\\]")
     pdir_pat = re.compile(pdir.encode("utf-8"), re.IGNORECASE)
 
+
+
     output_dir = "gh-pages/export"
     if os.path.exists(output_dir):
         rmtree(output_dir)
@@ -32,7 +34,7 @@ def main():
     for nbfile in Path(".").glob("*.ipynb"):
         no_input = b"#@export: --no-input" in nbfile.read_bytes()[:16_000]
 
-        exportargs = [
+        exportargs =  [
             which("jupyter"),
             "nbconvert",
             "--to=html",

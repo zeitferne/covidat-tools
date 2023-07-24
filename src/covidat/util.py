@@ -1,6 +1,6 @@
+from pathlib import Path
 import os
 import typing
-from pathlib import Path
 
 Openable = typing.Union[str, bytes, os.PathLike]
 

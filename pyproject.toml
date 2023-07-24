@@ -158,9 +158,6 @@ unfixable = [
 [tool.ruff.isort]
 known-first-party = ["covidat"]
 
-[tool.ruff.flake8-errmsg]
-max-string-length = 60
-
 [tool.ruff.flake8-tidy-imports]
 ban-relative-imports = "all"
 

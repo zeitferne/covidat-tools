@@ -134,9 +134,9 @@ def extracthospvax(rtext: str, fname: str):
             raise ValueError("Unknown rate: " + rate)
 
         total = int(mhosp.group("total"))
-        rnst = float(mhosp.group("rnst").replace(",", ".")) / 100
+        float(mhosp.group("rnst").replace(",", ".")) / 100
         ricu = parserate(mhosp.group("ricu"))
-        nstunvacc = int(mhosp.group("nstunvacc"))
+        int(mhosp.group("nstunvacc"))
         icuunvacc = int(mhosp.group("icuunvacc"))
 
         # Looks like the normal station percentage is about all persons, not
@@ -272,7 +272,7 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
         ofile.writerow(row)
 
 
-# 91-jährige Patientin, wohnhaft im Bezirk Gmunden, Vorerkrankungen unbekannt, Todesdatum: 30. Oktober (Salzkammergut Klinikum Bad Ischl-Gmunden-Vöcklabruck, Standort Gmunden)
+# 91-jährige Patientin, wohnhaft im Bezirk Gmunden, Vorerkrankungen unbekannt, Todesdatum: 30. Oktober (Salzkammergut Klinikum Bad Ischl-Gmunden-Vöcklabruck, Standort Gmunden)
 COND_INNER_PAT = r"(?:(?:mit|ohne|keine)(?: schweren?)? Vorerkrankung(?:en)?|Vorerkrankung(?:en)? unbekannt|Vorerkrankung(?:en)? (?:(?:zum Zeitpunkt der Meldung )?noch )?nicht bekannt)"
 COND_PAT = rf"(?: (?P<cond>{COND_INNER_PAT})\b\.?,?\s*)"
 COND_INNER_RE = re.compile(COND_INNER_PAT, re.IGNORECASE)
@@ -280,9 +280,7 @@ BEZ_PREFIX_PAT = r"(?:wohnhaft (?:in |im Bezirk,? )|aus dem Bezirk |aus (?:der S
 BEZ_PREFIX_RE = re.compile(BEZ_PREFIX_PAT, re.IGNORECASE)
 AGE_PAT = r"(?P<age>\d+)[-. ]+(?:jähr?i?g?e?r?e?|jähirger|jährigeer)"
 DEAD_RES = tuple(
-    map(
-        lambda p: re.compile(p, re.IGNORECASE),
-        [
+    re.compile(p, re.IGNORECASE) for p in [
             rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]? {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
             rf"{COND_PAT}?\s*(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))?\s*[(,](?!.*Todesdatum)\s*(?P<deathloc>[^\n)]+)",
             rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]?"
@@ -295,8 +293,7 @@ DEAD_RES = tuple(
             rf"{AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT} {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?)(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
             rf"{AGE_PAT} (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?){COND_PAT}(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
             rf"1 (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}(?P<district>[^\n,]+)\s*[,(]\s*(?P<age>\d+)s*[,)]{COND_PAT}?\s*(?P<deathloc>[^\n]+)\s*(?:\n|$)",
-        ],
-    )
+        ]
 )
 
 PAR_TEXT_RE = re.compile(r"\(([^)\n]+)\)")
@@ -399,7 +396,7 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
             if parm:
                 vals[1] = parm.group(1)
                 vals[0] = BEZ_PREFIX_RE.sub("", vals[0][: parm.start(0)] + vals[0][parm.end(0) :]).strip()
-        items.append([ts, name] + [dt.date() if dt else dt] + vals)
+        items.append([ts, name, dt.date() if dt else dt, *vals])
         if hasdate and not dt and m.group("deathdate").strip() != "unbekannt":
             raise ValueError(f"Bad date: '{m.group('deathdate')}' in {name}")
         if not hasdate and not m.group("cond"):
@@ -422,7 +419,7 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
 def runextraction(args):
     done = set()
     try:
-        oldfile_h = open("extractlk.csv", "r", encoding="utf-8", newline="\n")
+        oldfile_h = open("extractlk.csv", encoding="utf-8", newline="\n")
     except FileNotFoundError:
         pass
     else:

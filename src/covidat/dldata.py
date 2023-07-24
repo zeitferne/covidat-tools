@@ -8,7 +8,6 @@ import logging
 import lzma
 import mimetypes
 import re
-import sys
 import tomllib
 import typing
 import urllib.response
@@ -16,7 +15,7 @@ from collections.abc import Callable
 from datetime import datetime, timedelta
 from os.path import basename
 from pathlib import Path, PurePath, PurePosixPath
-from typing import Any, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 from zipfile import ZipFile
 
@@ -24,7 +23,7 @@ from .dlutil import dl_with_header_cache, get_moddate, write_hdr_file
 from .util import DATAROOT, DL_TSTAMP_FMT
 
 logger = logging.getLogger(__name__)
-DateExtractor = Callable[[urllib.response.addinfourl, bytes], Optional[datetime]]
+DateExtractor = Callable[[urllib.response.addinfourl, bytes], datetime | None]
 _date_extractors: dict[str, DateExtractor] = {}
 
 
@@ -84,9 +83,9 @@ def dl_url(
     # separators
     fname_format: str = "{}",
     sortdir_fmt: str = "",
-    extract_date: Optional[DateExtractor] = None,
+    extract_date: DateExtractor | None = None,
     dry_run: bool,
-) -> Optional[Exception]:
+) -> Exception | None:
     fname = PurePosixPath(urlparse(url).path).name
     fstem, fext = splitbasestem(fname)
     fext = fext or default_file_extension
@@ -113,7 +112,7 @@ def dl_url(
 
         data = resp.read()
 
-        def fpath_from_resp(resp) -> Tuple[Path, str]:
+        def fpath_from_resp(resp) -> tuple[Path, str]:
             hdrs = resp.headers
             ts = None
             if extract_date is not None:
@@ -193,7 +192,7 @@ def dl_url(
 
 
 @date_extractor
-def ages_versiondate(resp: urllib.response.addinfourl, data: bytes) -> Optional[datetime]:
+def ages_versiondate(resp: urllib.response.addinfourl, data: bytes) -> datetime | None:
     try:
         with io.BytesIO(data) as data_io, ZipFile(data_io) as zf, zf.open("Version.csv") as verfile, io.TextIOWrapper(
             verfile, encoding="utf-8"
@@ -207,7 +206,7 @@ def ages_versiondate(resp: urllib.response.addinfourl, data: bytes) -> Optional[
 
 
 @date_extractor
-def medshort_updatedate(resp: urllib.response.addinfourl, data: bytes) -> Optional[datetime]:
+def medshort_updatedate(resp: urllib.response.addinfourl, data: bytes) -> datetime | None:
     # Daten zuletzt aktualisiert am: 2022-12-10 00:31:12
     tmatch = re.search(rb"aktualisiert am: ([0-9-]+ [0-9:]+)", data)
     if not tmatch:

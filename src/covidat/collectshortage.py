@@ -10,7 +10,6 @@ import traceback
 import warnings
 from datetime import date, datetime
 from pathlib import Path
-from typing import Set
 
 import pandas as pd
 
@@ -92,7 +91,7 @@ def agg_status(s: pd.Series):
         if (s == "verfügbar").all()
         else "teilweise verfügbar"
         if "verfügbar" in s.values
-        else next((p for p in cat_prio if p in s.values))
+        else next(p for p in cat_prio if p in s.values)
     )
 
 
@@ -147,7 +146,6 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
             agg |= {
                 "Grund": lambda g: " / ".join(g.unique()),
                 "Melder": lambda w: " / ".join(w.unique()),
-                "Melder": lambda w: " / ".join(w.unique()),
                 "Zulassungsinhaber": lambda w: " / ".join(w.unique()),
                 "Wirkstoffe": lambda w: pd.unique(", ".join(w.unique()).split(", ")),
                 "Datum_Meldung": lambda s: pd.to_datetime(s, format="%Y-%m-%d").min(),
@@ -159,7 +157,7 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
         raise ValueError(f"{fname}: Bad status: {veasp['Status'].unique()}")
 
 
-def processfile(dts: Set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter):
+def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter):
     fdate = datetime.strptime(fname.stem.split("_", 1)[1].split(".", 1)[0], "%Y%m%d_%H%M%S").date()
     if fdate in dts:
         return
@@ -244,7 +242,7 @@ def collectshortage_ex(dirname, outname):
         ):
             try:
                 processfile(dts, fname, azr, writer)
-            except Exception as e:
+            except Exception:
                 traceback.print_exc()
                 print(
                     "The previous exception occured during processing of",

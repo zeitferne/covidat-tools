@@ -3,10 +3,8 @@ import io
 import shutil
 import sys
 from argparse import ArgumentParser, Namespace
-from datetime import datetime
 from glob import iglob
 from itertools import chain
-from pathlib import Path
 
 
 def collect_args() -> Namespace:

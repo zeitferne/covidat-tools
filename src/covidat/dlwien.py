@@ -2,10 +2,7 @@
 
 import sys
 from datetime import date, timedelta
-from http.client import HTTPResponse, HTTPSConnection
-from pathlib import Path
-from shutil import copyfileobj
-from typing import Optional
+from http.client import HTTPSConnection
 from urllib.error import HTTPError
 
 from . import dlutil, util

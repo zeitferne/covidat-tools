@@ -5,12 +5,12 @@ import re
 import threading
 import typing
 from collections import Counter
+from collections.abc import Sequence
 from contextlib import contextmanager, nullcontext
-from cProfile import label
 from datetime import date, timedelta
 from itertools import count
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any
 from zipfile import ZipFile
 
 import matplotlib as mpl
@@ -245,7 +245,7 @@ def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey=Fals
             )
         else:
             ax.bar(oldseries.index, oldseries, color=color or "k", lw=0, label=oldstamp)
-            newbs = ax.bar(
+            ax.bar(
                 newseries.index,
                 newseries.sub(oldseries, fill_value=0).where(newseries > oldseries),
                 bottom=oldseries,
@@ -285,7 +285,7 @@ def plt_mdiff(
     fig, axs = plt.subplots(5, 2, figsize=(10, 10), sharex=True, sharey=sharey)
     # display(g.axes)
     # style=dict(lw=0.5, mew=0, marker=".", markersize=5)
-    style = dict(lw=0.4)
+    {"lw": 0.4}
     maxy = 0
     for k, ax in zip(fs[catcol].unique(), axs.flat):
         # print(k)
@@ -485,8 +485,8 @@ def plt_age_sums_ax(  # TODO: Ugly!
     n_days: int,
     col: str = "inz",
     mode: str = "direct",
-    weightcol: str = None,
-    color_args: dict = None,
+    weightcol: str | None = None,
+    color_args: dict | None = None,
 ):
     return plt_cat_sums_ax(
         ax,
@@ -510,8 +510,8 @@ def plt_cat_sums_ax(  # TODO: Ugly!
     n_days: int,
     col: str = "inz",
     mode: str = "direct",
-    weightcol: str = None,
-    color_args: dict = None,
+    weightcol: str | None = None,
+    color_args: dict | None = None,
 ):
     # n_days = (agd_sums_at.iloc[-1]["Datum"] - agd_sums_at.iloc[0]["Datum"]).days
     # n_days = 500
@@ -573,7 +573,7 @@ def remove_labels_after(ax: plt.Axes, label: str, **kwargs):
 
 
 # For use with https://github.com/statistikat/coronaDAT/
-def get_zip_name(dt: date, pattern: Union[str, typing.Iterable[str]]) -> Path:
+def get_zip_name(dt: date, pattern: str | typing.Iterable[str]) -> Path:
     if not isinstance(pattern, str):
         for pattern0 in pattern:
             try:
@@ -591,9 +591,9 @@ def get_zip_name(dt: date, pattern: Union[str, typing.Iterable[str]]) -> Path:
 
 def loadall(
     fname: str,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     normalize=lambda df: df,
-    csv_args: Optional[dict[str, Any]] = None,
+    csv_args: dict[str, Any] | None = None,
 ) -> pd.DataFrame:
     daydata_list = []  # type: list[pd.DataFrame]
     today = date(2023, 6, 30)  # date.today()
@@ -615,9 +615,9 @@ def loadall(
 
 
 def get_day_zip_name(
-    daydate: Optional[date] = None,
-    pattern: Optional[Union[str, typing.Iterable[str]]] = None,
-    try_earlier: Optional[bool] = None,
+    daydate: date | None = None,
+    pattern: str | typing.Iterable[str] | None = None,
+    try_earlier: bool | None = None,
     warn_yesterday=True,
 ) -> Path:
     pattern = pattern or ("*_orig_csv_ages", "*_orig_csv_ages.zip", "*_*_orig_csv.zip")
@@ -642,9 +642,9 @@ def get_day_zip_name(
 
 def load_day(
     fname: str,
-    daydate: Optional[date] = None,
-    pattern: Optional[str] = None,
-    csv_args: Optional[dict[str, Any]] = None,
+    daydate: date | None = None,
+    pattern: str | None = None,
+    csv_args: dict[str, Any] | None = None,
 ) -> pd.DataFrame:
     zp = get_day_zip_name(daydate, pattern)
     with ZipFile(zp) if zp.is_file() else nullcontext(zp) as zf:
@@ -759,13 +759,13 @@ def set_week_labels(fig: plt.Figure, ax: plt.Axes):
 @contextmanager
 def calc_shifted(  # TODO: Read https://pandas.pydata.org/docs/user_guide/groupby.html and refactor to use index more if useful
     ds: pd.DataFrame,
-    by: Union[str, List[str]],
+    by: str | list[str],
     periods: int = 1,
     *,
-    newcols: Optional[List[str]] = None,
+    newcols: list[str] | None = None,
     fill=np.nan,
 ):
-    ds.sort_values(by=[by, "Datum"] if isinstance(by, str) else by + ["Datum"], inplace=True)
+    ds.sort_values(by=[by, "Datum"] if isinstance(by, str) else [*by, "Datum"], inplace=True)
     shifted = ds.shift(periods)
     cols = ds.columns.copy()
     yield shifted
@@ -783,7 +783,7 @@ def calc_shifted(  # TODO: Read https://pandas.pydata.org/docs/user_guide/groupb
     ds.loc[mask, newcols] = fill
 
 
-def load_bezirke(daydate: typing.Optional[date] = None) -> pd.DataFrame:
+def load_bezirke(daydate: date | None = None) -> pd.DataFrame:
     #  df = add_date(loadall("CovidFaelle_GKZ.csv"), "Datum")
     df = add_date(load_day("CovidFaelle_Timeline_GKZ.csv", daydate), "Time", format=AGES_TIME_FMT)
     df.rename(columns={"AnzahlTotTaeglich": "AnzahlTot"}, inplace=True)
@@ -853,7 +853,7 @@ def render_bez(df: pd.DataFrame, which: Sequence[str], figname: str):
     axs[1].get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     axs[1].set_yticks([1, 2, 3, 5, 10, 20, 35, 50])
     for ax in axs:
-        lineargs = dict(color="grey", linewidth=1)
+        lineargs = {"color": "grey", "linewidth": 1}
         # ax.axvline(x=date(2021, 7, 1), **lineargs)
         # ax.axvline(x=date(2021, 6, 10), **lineargs)
         # ax.axvline(x=date(2021, 6, 26), linewidth=1, color="r")
@@ -909,12 +909,12 @@ AGE_TO_MAP = {
 }
 
 
-def enrich_ag(ag_o, agefromto=True, parsedate=True, bev: typing.Optional[pd.Series] = None):
+def enrich_ag(ag_o, agefromto=True, parsedate=True, bev: pd.Series | None = None):
     catcols = ["BundeslandID", "AltersgruppeID", "Geschlecht"]
     faelle_ag = norm_df(ag_o, datecol="Time", format=AGES_TIME_FMT) if parsedate else ag_o
     faelle_ag["AnzEinwohnerFixed"] = faelle_ag["AnzEinwohner"]
     if bev is not None:
-        faelle_ag.set_index(["Datum"] + catcols, inplace=True)
+        faelle_ag.set_index(["Datum", *catcols], inplace=True)
         # display("f", faelle_ag.index.dtypes)
         # display("b", bev.index.dtypes)
         faelle_ag["AnzEinwohner"] = bev
@@ -935,14 +935,14 @@ def enrich_ag(ag_o, agefromto=True, parsedate=True, bev: typing.Optional[pd.Seri
     return faelle_ag
 
 
-def load_ag(daydate: typing.Optional[date] = None, bev: typing.Optional[pd.Series] = None) -> pd.DataFrame:
+def load_ag(daydate: date | None = None, bev: pd.Series | None = None) -> pd.DataFrame:
     return enrich_ag(load_day("CovidFaelle_Altersgruppe.csv", daydate), bev=bev)
 
 
 def enrich_inz(
     df: pd.DataFrame,
     inzcol: str = "inz",
-    catcol: Union[str, List[str]] = "Bezirk",
+    catcol: str | list[str] = "Bezirk",
     dailycol: str = "AnzahlFaelle",
 ):
     for d in (1, 3, 7, 14):
@@ -958,7 +958,7 @@ def enrich_inz(
 
 
 def g_to_pct(g):
-    result = format(g * 100 - 100, "+.3n").replace("-", "‒") + "%"
+    result = format(g * 100 - 100, "+.3n").replace("-", "-") + "%"
     return "±0%" if result == "+0%" else result
 
 
@@ -1100,7 +1100,7 @@ def enrich_hosp_data(faelle: pd.DataFrame) -> None:
     faelle["icu"] = faelle["FZICU"] / faelle["AnzEinwohner"] * 100_000
 
 
-def load_faelle(daydate: typing.Optional[date] = None, bev: typing.Optional[pd.Series] = None) -> pd.DataFrame:
+def load_faelle(daydate: date | None = None, bev: pd.Series | None = None) -> pd.DataFrame:
     faelle_ag = load_ag(daydate, bev)
     faelle_ag["AGCoarse"] = "<25"
     faelle_ag.loc[faelle_ag["AgeFrom"] >= 25, "AGCoarse"] = "25-54"
@@ -1117,7 +1117,7 @@ def load_faelle(daydate: typing.Optional[date] = None, bev: typing.Optional[pd.S
     with calc_shifted(ag_coarse, ["Bundesland", "AGCoarse"], 7, newcols=["inz"]):
         ag_coarse["inz"] = calc_inz(ag_coarse)
     idxs = ["Datum", "BundeslandID", "Bundesland"]
-    ag_coarse.set_index(["AGCoarse"] + idxs, inplace=True)
+    ag_coarse.set_index(["AGCoarse", *idxs], inplace=True)
     faelle = add_date(load_day("CovidFaelle_Timeline.csv", daydate), "Time", format=AGES_TIME_FMT)
     faelle["AnzEinwohnerFixed"] = faelle["AnzEinwohner"]
     if bev is not None:
@@ -1152,11 +1152,11 @@ def load_faelle(daydate: typing.Optional[date] = None, bev: typing.Optional[pd.S
     return faelle
 
 
-def load_faelle_at(daydate: typing.Optional[date] = None) -> pd.DataFrame:
+def load_faelle_at(daydate: date | None = None) -> pd.DataFrame:
     return load_faelle(daydate).query("Bundesland == 'Österreich'")
 
 
-bglinestyle_nc = dict(zorder=-1, linewidth=0.7)
+bglinestyle_nc = {"zorder": -1, "linewidth": 0.7}
 bglinestyle = dict(color="grey", **bglinestyle_nc)
 
 
@@ -1498,7 +1498,7 @@ BUNDESLAND_BY_ID = {
 }
 
 
-def load_gem_impfungen(daydate: Optional[date] = None):
+def load_gem_impfungen(daydate: date | None = None):
     gis = add_date(
         typing.cast(
             pd.DataFrame,
@@ -1558,7 +1558,7 @@ def print_predictions(faelle_at: pd.DataFrame, col: str, name: str, target: int 
     ds = faelle_at[col]
     today = faelle_at.index.get_level_values("Datum")[-1]
     cur_inz = ds.iloc[-1]
-    print("{:40} (zuletzt {:6.1f}) in {:2.0f} Tagen / {:4.0f} erreicht am:".format(name, cur_inz, days, target))
+    print(f"{name:40} (zuletzt {cur_inz:6.1f}) in {days:2.0f} Tagen / {target:4.0f} erreicht am:")
     logdiff = np.log(target) - np.log(cur_inz)
 
     def indays(n):
@@ -1653,7 +1653,7 @@ def main():
         3,
         sharex=True,
         sharey=True,
-        gridspec_kw=dict(hspace=0.1, wspace=0.1),
+        gridspec_kw={"hspace": 0.1, "wspace": 0.1},
         num="Pandemieverlauf/Bundesland",
         figsize=a2_dims,
         dpi=200,
@@ -1727,7 +1727,6 @@ def set_date_opts(ax: plt.Axes, xs: pd.Series = None, showyear=None, showday=Non
         ax.xaxis.set_tick_params(which="major", pad=15)
         ax.xaxis.set_tick_params(which="minor", labelsize="x-small")
     ax.tick_params(axis="x", bottom=True, labelbottom=True)
-    margin = 0.9
     if xs is not None and isinstance(xs.min(), date):
         ax.set_xlim(
             left=matplotlib.dates.date2num(xs.min()) - 0.5,
@@ -1758,7 +1757,7 @@ def plt_cat_dists(
         fig = plt.Figure()
         ax = fig.subplots()
         ax.set_title(f"{bundesland}: {title} je {catcol}{stamp}")
-        styleargs = {} if continous else dict(ds="steps-mid", solid_joinstyle="miter")
+        styleargs = {} if continous else {"ds": "steps-mid", "solid_joinstyle": "miter"}
         sns.lineplot(
             ax=ax,
             data=data_agg,
@@ -1882,7 +1881,7 @@ def plt_cat_dists(
         n_days=len(pltdates),
         col="inz",
         weightcol="AnzEinwohner",
-        color_args=dict(palette="flare_r"),
+        color_args={"palette": "flare_r"},
         catcol=catcol,
     )
     # ax.legend(title="Altersgruppe", loc="upper left")

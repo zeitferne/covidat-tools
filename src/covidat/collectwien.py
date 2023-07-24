@@ -41,8 +41,6 @@ def match_number(pat: re.Pattern, text: str) -> int:
 
 
 def collectwien(dirname, outname):
-    frames = []
-    firstrow = True
     with open(outname, "w", encoding="utf-8", newline="\n") as outfile:
         writer = csv.DictWriter(
             outfile,

@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 
 import pandas as pd
 
@@ -22,7 +21,7 @@ def load_ww_blverlauf() -> pd.DataFrame:
 
 
 def first_filedate(df: pd.DataFrame, catcols: list[str]) -> pd.DataFrame:
-    return df.sort_values("FileDate", kind="stable").groupby(["Datum"] + catcols).first()
+    return df.sort_values("FileDate", kind="stable").groupby(["Datum", *catcols]).first()
 
 
 def add_date(df: pd.DataFrame, colname: str, format=None) -> pd.DataFrame:

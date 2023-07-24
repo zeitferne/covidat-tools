@@ -5,7 +5,6 @@ import json
 import lzma
 from datetime import datetime
 from itertools import zip_longest
-from pathlib import Path
 
 from . import util
 

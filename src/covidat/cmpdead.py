@@ -16,12 +16,13 @@ import traceback
 import typing
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import timedelta
 from itertools import repeat
 from math import ceil
 from pathlib import Path
-from typing import Any, Iterable, NamedTuple, Optional
+from typing import Any, NamedTuple
 from zipfile import ZipFile
 
 import numpy as np
@@ -70,7 +71,7 @@ def tlen(s):
 
 
 AG_IDX_COLS = ["Datum", "BundeslandID", "AltersgruppeID", "Geschlecht"]
-AG_DIFF_IDX_COLS = AG_IDX_COLS + ["Bezirk"]
+AG_DIFF_IDX_COLS = [*AG_IDX_COLS, "Bezirk"]
 
 
 def load_dead(fname: Openable) -> DayData:
@@ -98,7 +99,7 @@ def load_dead(fname: Openable) -> DayData:
         # "AnzahlGeheiltSum": int,
     }
 
-    csvargs = dict(engine="c", header=0, encoding="utf-8", sep=";")
+    csvargs = {"engine": "c", "header": 0, "encoding": "utf-8", "sep": ";"}
     fname = Path(fname)
     if fname.is_dir():
         verdata = pd.read_csv(fname / "Version.csv", **csvargs)
@@ -185,7 +186,7 @@ def cmp_dead(old: DayData, new: DayData) -> DiffData:
                 if len(bezmatch) != 1:
                     row = row._replace(AnzahlTot=anzTot)
                 diff.loc[key] = row[1:]
-                bezopen.loc[bezkey + (bezkeytail,), "AnzahlTot"] -= row.AnzahlTot
+                bezopen.loc[(*bezkey, bezkeytail), "AnzahlTot"] -= row.AnzahlTot
         else:
             sum_ag_open += row.AnzahlTot
     diff.index.set_names(origdiff.index.names, inplace=True)  # Workaround Pandas v2.0 bug
@@ -194,7 +195,7 @@ def cmp_dead(old: DayData, new: DayData) -> DiffData:
         sum_open = bezopen["AnzahlTot"].sum()
         logger.log(
             logging.INFO if sum_ag_open == sum_open else logging.WARN,
-            "%d Bezirk-entries with %d deaths were not used/overused" " with %d deaths from age data not matched",
+            "%d Bezirk-entries with %d deaths were not used/overused with %d deaths from age data not matched",
             left_open.sum(),
             sum_open,
             sum_ag_open,
@@ -425,13 +426,13 @@ def format_dead(diff: DiffData) -> str:
     if corrinfo.n_corr != 0:
         if result:
             result.append("Weiters ")
-        result.append(f"{corrinfo.n_corr} Ummeldungen, " f"{fmt_dt_range(corrinfo.mindate, corrinfo.maxdate, tod)}\n")
+        result.append(f"{corrinfo.n_corr} Ummeldungen, {fmt_dt_range(corrinfo.mindate, corrinfo.maxdate, tod)}\n")
 
     return "".join(result)
 
 
 EMOJI_BY_AGE = {
-    k: dict(M=m, W=w)
+    k: {"M": m, "W": w}
     for k, (m, w) in {
         "<5": ("👶", "👶"),
         "5-14": ("👦", "👧"),
@@ -572,7 +573,7 @@ def format_weekstat_tweets(weekdiff: DiffData) -> list[str]:
     oldsum = oldsummary["AnzahlTot"].sum()
     logger.debug("weekstat: diffentries scrubbed from %s old:\n%s", oldsum, diffentries)
     if oldsum != 0:
-        oldnote = f"({oldsum:+.0f} bis " f"{reldate(oldsummary['maxdate'].max(), weekdiff.new.creationdate)})\n"
+        oldnote = f"({oldsum:+.0f} bis {reldate(oldsummary['maxdate'].max(), weekdiff.new.creationdate)})\n"
         if oldsum < 0 or (oldsum > 0 and tlen(oldnote) < oldsum * 2):
             header += oldnote
         else:
@@ -610,10 +611,10 @@ def format_weekstat_tweets(weekdiff: DiffData) -> list[str]:
 
 @dataclass(frozen=True)
 class BotState:
-    lastfile: Optional[str]
-    replyto: Optional[str] = None
-    lastfile_weekly: Optional[str] = None
-    brokenreplyto: Optional[str] = None
+    lastfile: str | None
+    replyto: str | None = None
+    lastfile_weekly: str | None = None
+    brokenreplyto: str | None = None
 
 
 def next_bot_state(newfile: str, botstate: BotState) -> tuple[list[str], BotState]:
@@ -643,7 +644,7 @@ def next_bot_state(newfile: str, botstate: BotState) -> tuple[list[str], BotStat
 
 class BotStateIo(ABC):
     @abstractmethod
-    def read_bot_state(self) -> Optional[BotState]:
+    def read_bot_state(self) -> BotState | None:
         pass
 
     @abstractmethod
@@ -660,10 +661,10 @@ class BotStateIo(ABC):
 
 
 class InMemoryBotStateIo(BotStateIo):
-    def __init__(self, botstate: Optional[BotState] = None):
+    def __init__(self, botstate: BotState | None = None):
         self.persisted_state = botstate
 
-    def read_bot_state(self) -> Optional[BotState]:
+    def read_bot_state(self) -> BotState | None:
         return self.persisted_state
 
     def write_botstate(self, state: BotState, only_create=False) -> None:
@@ -682,7 +683,7 @@ class ProdBotStateIo(BotStateIo):
     _STATEFILENAME = "botstate.json"
     _OUTFILENAME = "botout.txt"
 
-    def read_bot_state(self) -> Optional[BotState]:
+    def read_bot_state(self) -> BotState | None:
         try:
             statef = open(self._STATEFILENAME, "rb")
         except FileNotFoundError as exc:
@@ -750,7 +751,7 @@ def run_bot(botio: BotStateIo, newfile: Openable) -> None:
                     resp = client.create_tweet(in_reply_to_tweet_id=replyto, text=tweet)
                     replyto = resp.data["id"]
                     logger.info("Created tweet %s", replyto)
-            except:  # noqa
+            except:
                 # Error occured during tweet (even KeyboardInterrupt) =>
                 # Stop tweeting until manual intervention
                 botio.write_botstate(dataclasses.replace(botstate, brokenreplyto=replyto))

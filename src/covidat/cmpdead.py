@@ -6,27 +6,29 @@ Offers a commandline interface as well to compare specific AGES
 data drops (see --help).
 """
 
-from abc import ABC, abstractmethod
-from argparse import ArgumentParser
 import dataclasses
-from datetime import timedelta
 import json
-from math import ceil
-from pathlib import Path
-import traceback
-from typing import Any, Iterable, NamedTuple, Optional
-import typing
-from zipfile import ZipFile
-import pandas as pd
-import numpy as np
-from dataclasses import dataclass
-from .covdata import SHORTNAME2_BY_BUNDESLAND, add_date, AGES_TIME_FMT, shorten_bezname
-from itertools import repeat
 import locale
 import logging
-from .util import Openable, COLLECTROOT
 import os
 import sys
+import traceback
+import typing
+from abc import ABC, abstractmethod
+from argparse import ArgumentParser
+from dataclasses import dataclass
+from datetime import timedelta
+from itertools import repeat
+from math import ceil
+from pathlib import Path
+from typing import Any, Iterable, NamedTuple, Optional
+from zipfile import ZipFile
+
+import numpy as np
+import pandas as pd
+
+from .covdata import AGES_TIME_FMT, SHORTNAME2_BY_BUNDESLAND, add_date, shorten_bezname
+from .util import COLLECTROOT, Openable
 
 try:
     from tweepy import Client  # type: ignore

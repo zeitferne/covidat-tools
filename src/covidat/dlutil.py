@@ -1,16 +1,17 @@
-from email.utils import parsedate_to_datetime
-from email.message import Message
 import os
 import ssl
-from http import HTTPStatus
-from http.client import HTTPMessage, parse_headers
-from typing import Optional, Tuple, Union
 import typing
-from urllib.error import HTTPError
-from urllib.request import Request, urlopen
 import urllib.response
 from datetime import datetime
+from email.message import Message
+from email.utils import parsedate_to_datetime
+from http import HTTPStatus
+from http.client import HTTPMessage, parse_headers
 from logging import getLogger
+from typing import Optional, Tuple, Union
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
 from .util import Openable
 
 logger = getLogger(__name__)

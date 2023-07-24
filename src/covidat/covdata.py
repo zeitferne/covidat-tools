@@ -1,5 +1,7 @@
-import pandas as pd
 from dataclasses import dataclass
+
+import pandas as pd
+
 from .util import COLLECTROOT
 
 AGES_DATE_FMT = "%d.%m.%Y"

@@ -9,14 +9,14 @@ def create_ctx(*args, **kwargs):
 
 ssl._create_default_https_context = create_ctx
 
-from urllib.error import HTTPError
-from datetime import datetime, date, timedelta
-import sys
-from http.client import HTTPSConnection
-from urllib.parse import urlsplit
 import glob
-from . import dlutil
-from . import util
+import sys
+from datetime import date, datetime, timedelta
+from http.client import HTTPSConnection
+from urllib.error import HTTPError
+from urllib.parse import urlsplit
+
+from . import dlutil, util
 
 CERT_DATA_URL_FMT = (
     "https://info.gesundheitsministerium.gv.at/data/archiv/COVID19_vaccination_municipalities_%Y%m%d.csv"

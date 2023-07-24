@@ -8,10 +8,10 @@ was removed (since the AGES data was also shut down).
 
 import os
 import os.path
-import shutil
-from subprocess import check_call
 import shlex
+import shutil
 import sys
+from subprocess import check_call
 
 
 def is_venv():

@@ -1,11 +1,12 @@
 import argparse
 import csv
-from datetime import date, datetime
 import html
 import itertools
 import re
-import dateparser
+from datetime import date, datetime
 from pathlib import Path
+
+import dateparser
 from bs4 import BeautifulSoup
 
 TITLE_RE = re.compile(r"<title>([^<]*)</title>")

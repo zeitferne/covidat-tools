@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
-import itertools
-import sys
-import traceback
-from datetime import date, datetime
-from pathlib import Path
 import csv
 import html
-import re
-from typing import Set
-import warnings
-import pandas as pd
+import itertools
 import logging
+import re
+import sys
+import traceback
+import warnings
+from datetime import date, datetime
+from pathlib import Path
+from typing import Set
+
+import pandas as pd
+
 from . import util
 
 logger = logging.getLogger(__name__)

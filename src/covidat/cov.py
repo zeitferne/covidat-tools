@@ -1,11 +1,12 @@
 import argparse
-from cProfile import label
 import locale
 import logging
 import re
 import threading
 import typing
-from contextlib import contextmanager
+from collections import Counter
+from contextlib import contextmanager, nullcontext
+from cProfile import label
 from datetime import date, timedelta
 from itertools import count
 from pathlib import Path
@@ -14,20 +15,18 @@ from zipfile import ZipFile
 
 import matplotlib as mpl
 import matplotlib.axis
-import matplotlib.dates
 import matplotlib.colors
+import matplotlib.dates
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from collections import Counter
 from cycler import cycler
 from IPython.display import display
-from contextlib import nullcontext
 
-from .util import COLLECTROOT
 from .covdata import *
+from .util import COLLECTROOT
 
 logger = logging.getLogger(__name__)
 

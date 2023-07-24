@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import json
-from datetime import datetime
-from pathlib import Path
 import csv
+import json
 import lzma
+from datetime import datetime
 from itertools import zip_longest
+from pathlib import Path
+
 from . import util
 
 

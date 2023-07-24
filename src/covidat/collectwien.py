@@ -1,10 +1,11 @@
-from datetime import datetime
-from pathlib import Path
 import csv
-from . import util
 import html
-from itertools import chain
 import re
+from datetime import datetime
+from itertools import chain
+from pathlib import Path
+
+from . import util
 
 HWS_RE = re.compile(r"[ \t\u00A0]+")
 INT_PAT = r"(?:\d+|(?:[0-9]{1,3}(?:\.[0-9]{3})+))"

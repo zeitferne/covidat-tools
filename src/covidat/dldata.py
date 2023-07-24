@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
 
 import argparse
+import csv
+import io
 import locale
 import logging
 import lzma
+import mimetypes
 import re
 import sys
-from typing import Any, Optional, Tuple
-from collections.abc import Callable
+import tomllib
 import typing
-from urllib.parse import urlparse
-from zipfile import ZipFile
+import urllib.response
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from os.path import basename
-import csv
-import io
 from pathlib import Path, PurePath, PurePosixPath
-import urllib.response
-import mimetypes
-import tomllib
-from .dlutil import dl_with_header_cache, write_hdr_file, get_moddate
-from .util import DL_TSTAMP_FMT, DATAROOT
+from typing import Any, Optional, Tuple
+from urllib.parse import urlparse
+from zipfile import ZipFile
+
+from .dlutil import dl_with_header_cache, get_moddate, write_hdr_file
+from .util import DATAROOT, DL_TSTAMP_FMT
 
 logger = logging.getLogger(__name__)
 DateExtractor = Callable[[urllib.response.addinfourl, bytes], Optional[datetime]]

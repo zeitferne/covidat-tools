@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
-from http.client import HTTPSConnection, HTTPResponse
+import sys
 from datetime import date, timedelta
+from http.client import HTTPResponse, HTTPSConnection
 from pathlib import Path
 from shutil import copyfileobj
-import sys
-from urllib.error import HTTPError
-from . import dlutil
-from . import util
-
 from typing import Optional
+from urllib.error import HTTPError
+
+from . import dlutil, util
 
 # NB: Need to manually add:
 # https://presse.wien.gv.at/presse/2022/10/10/aktualisiert-corona-virus-aktuelle-kennzahlen-der-stadt-wien

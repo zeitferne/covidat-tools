@@ -1,7 +1,9 @@
 import re
-from . import util
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+
+from . import util
 
 
 def _ks_colnames(sfx):

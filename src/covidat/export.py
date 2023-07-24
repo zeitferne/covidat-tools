@@ -1,11 +1,11 @@
-from pathlib import Path
-import re
-from subprocess import check_call
-from shutil import which, rmtree
 import os
 import os.path
+import re
 import subprocess
 from argparse import ArgumentParser
+from pathlib import Path
+from shutil import rmtree, which
+from subprocess import check_call
 
 
 def main():

@@ -89,9 +89,7 @@ def _read_header_file(hdrfilepath: Openable) -> Optional[HTTPMessage]:
         return parse_headers(hdrf)
 
 
-def write_hdr_file(
-    resp_headers: Message, ofilepath: Openable, allow_existing=True
-) -> None:
+def write_hdr_file(resp_headers: Message, ofilepath: Openable, allow_existing=True) -> None:
     with open(ofilepath, "wb" if allow_existing else "xb") as of:
         of.write(resp_headers.as_bytes())
 

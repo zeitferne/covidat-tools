@@ -40,10 +40,7 @@ def requestkennzahlen_single(conn: HTTPSConnection, dt: date, lastfmt_idx: int) 
             is_notfound = False
             if resp.status == 200:
                 data = resp.read()
-                is_notfound = (
-                    b"Internet-Adresse (URL) ist auf unserem Server nicht oder nicht mehr vorhanden"
-                    in data
-                )
+                is_notfound = b"Internet-Adresse (URL) ist auf unserem Server nicht oder nicht mehr vorhanden" in data
                 if not is_notfound:
                     dirp.mkdir(exist_ok=True, parents=True)
                     with fpath.open("xb") as ofile:

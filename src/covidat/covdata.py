@@ -10,17 +10,18 @@ ISO_SP_TIME_FMT = f"{ISO_DATE_FMT} {HMS_TIME}"
 ISO_TIME_FMT = f"{ISO_DATE_FMT}T{HMS_TIME}"
 ISO_TIME_TZ_FMT = f"{ISO_TIME_FMT}%z"
 
+
 def load_ww_blverlauf() -> pd.DataFrame:
-    blverlauf = pd.read_csv(COLLECTROOT / "covid/abwassermonitoring/blverlauf_all.csv.xz",
-                        sep=";", parse_dates=["FileDate", "Datum"])
+    blverlauf = pd.read_csv(
+        COLLECTROOT / "covid/abwassermonitoring/blverlauf_all.csv.xz", sep=";", parse_dates=["FileDate", "Datum"]
+    )
     blverlauf.rename(columns={"name": "Bundesland"}, inplace=True, errors="raise")
     return blverlauf
 
+
 def first_filedate(df: pd.DataFrame, catcols: list[str]) -> pd.DataFrame:
-    return (df
-        .sort_values("FileDate", kind="stable")
-        .groupby(["Datum"] + catcols)
-        .first())
+    return df.sort_values("FileDate", kind="stable").groupby(["Datum"] + catcols).first()
+
 
 def add_date(df: pd.DataFrame, colname: str, format=None) -> pd.DataFrame:
     df["Datum"] = pd.to_datetime(df[colname], dayfirst=True, format=format, exact=format is not None)
@@ -33,21 +34,22 @@ def norm_df(df: pd.DataFrame, *, datecol: str, format=None) -> pd.DataFrame:
     add_date(df, datecol, format=format)
     return df
 
+
 def shorten_bezname(bezname: str, *, soft=False) -> str:
     result = (
-        bezname
-        .replace("Sankt Johann im Pongau", "Pongau")
+        bezname.replace("Sankt Johann im Pongau", "Pongau")
         .replace(" an der ", "/")
         .replace(" am ", "/")
         .replace(" im ", "/")
         .replace("Sankt ", "St. ")
         .replace(" Stadt", "")
-        .replace("Wiener ", "Wr. "))
+        .replace("Wiener ", "Wr. ")
+    )
     if not soft or not result.startswith("Salzburg"):
         result = result.replace("(Stadt)", "")
     if not soft:
-        result = (result
-            .replace("-Stadt", "")
+        result = (
+            result.replace("-Stadt", "")
             .replace("stadt", "st.")
             .replace("dorf", "df.")
             .replace("-Land", "-L")  # Landeck must not become Leck
@@ -62,6 +64,7 @@ def shorten_bezname(bezname: str, *, soft=False) -> str:
             .replace("Waidhofen", "Waidh.")
         )
     return result.strip()
+
 
 SHORTNAME_BY_BUNDESLAND = {
     "Burgenland": "B",

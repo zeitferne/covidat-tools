@@ -119,25 +119,30 @@ select = [
   "ARG",
   "B",
   "C",
+  #"COM", # flake8-commas
+  #"D",  # pydocstyle
+  #"ANN",  # flake8-annotations
+  #"ASYNC",  # flake8-async
   "DTZ",
   "E",
-  "EM",
+  #"EM",
   "F",
   "FBT",
+  #"G", flake8-logging-format
+  #"FLY",  # static-join-to-f-string
   "I",
   "ICN",
   "ISC",
   "N",
-  "PLC",
-  "PLE",
-  "PLR",
-  "PLW",
+  "PL",
+  # "PERF",  # Perflint
   "Q",
   "RUF",
   "S",
   "T",
   "TID",
   "UP",
+  #"NPY"
   "W",
   "YTT",
 ]

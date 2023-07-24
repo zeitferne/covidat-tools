@@ -38,11 +38,7 @@ def collectshortage(dirname, outname):
         for fname in sorted(Path(dirname).glob("adf_*_*.task-flow")):
             with open(fname, encoding="utf-8") as f:
                 fdata = HWS_RE.sub(" ", html.unescape(f.read()))
-            fdate = (
-                datetime.strptime(fname.stem.split("_", 1)[1], "%Y%m%d_%H%M%S")
-                .date()
-                .isoformat()
-            )
+            fdate = datetime.strptime(fname.stem.split("_", 1)[1], "%Y%m%d_%H%M%S").date().isoformat()
             try:
                 writer.writerow(
                     {
@@ -81,13 +77,9 @@ def load_azr():
     azr.drop_duplicates("Zulassungsnummer", keep="last", inplace=True)
     msk = azr["Zulassungsnummer"].str.match("EU/.+[-,]")
     azr0 = azr.loc[msk].copy()
-    azr0["Zulassungsnummer"] = azr0["Zulassungsnummer"].str.replace(
-        "[-,][^/]+$", "", regex=True, n=1
-    )
+    azr0["Zulassungsnummer"] = azr0["Zulassungsnummer"].str.replace("[-,][^/]+$", "", regex=True, n=1)
     azr["nkey"] = norm_name(azr["Name"])
-    azr_m = pd.read_csv(
-        util.DATAROOT / "basg-medicineshortage/ASP-Missing.csv", sep=";"
-    )
+    azr_m = pd.read_csv(util.DATAROOT / "basg-medicineshortage/ASP-Missing.csv", sep=";")
     azr = pd.concat([azr, azr0, azr_m]).reset_index(drop=True)
     return azr
 
@@ -124,9 +116,7 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
         "left",
         on="Zulassungsnummer",
     )
-    msk = pd.isna(veasp["Verwendung"]) & veasp["Zulassungsnummer"].str.match(
-        "EU/.+[-,]"
-    )
+    msk = pd.isna(veasp["Verwendung"]) & veasp["Zulassungsnummer"].str.match("EU/.+[-,]")
     veasp.loc[msk, "Zulassungsnummer"] = veasp.loc[msk, "Zulassungsnummer"].str.replace(
         "[-,][^/]+$", "", regex=True, n=1
     )
@@ -142,9 +132,7 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
     naveasp = veasp[pd.isna(veasp["Verwendung"])]
     if len(naveasp) > 0:
         raise ValueError(
-            str(fname)
-            + ": Not found in AZR: "
-            + naveasp[["Zulassungsnummer", "Name"]].to_csv(sep=";", index=False)
+            str(fname) + ": Not found in AZR: " + naveasp[["Zulassungsnummer", "Name"]].to_csv(sep=";", index=False)
         )
     # veasp.sort_values(["Avail_c"], kind="stable", inplace=True)
     # veasp.drop(columns=["Verwendung_y"], inplace=True)
@@ -160,21 +148,17 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
                 "Melder": lambda w: " / ".join(w.unique()),
                 "Zulassungsinhaber": lambda w: " / ".join(w.unique()),
                 "Wirkstoffe": lambda w: pd.unique(", ".join(w.unique()).split(", ")),
-                "Datum_Meldung":lambda s: pd.to_datetime(s, format="%Y-%m-%d").min(),
+                "Datum_Meldung": lambda s: pd.to_datetime(s, format="%Y-%m-%d").min(),
                 "Datum_letzte_Aenderung": lambda s: pd.to_datetime(s, format="%Y-%m-%d").max(),
-                "Beginn_Vertriebseinschraenkung": lambda s: pd.to_datetime(s, format="%Y-%m-%d").min()
+                "Beginn_Vertriebseinschraenkung": lambda s: pd.to_datetime(s, format="%Y-%m-%d").min(),
             }
-        return (
-            veasp.groupby(["Zulassungsnummer", "Verwendung"]).agg(agg)
-        ).reset_index()
+        return (veasp.groupby(["Zulassungsnummer", "Verwendung"]).agg(agg)).reset_index()
     except StopIteration:
         raise ValueError(f"{fname}: Bad status: {veasp['Status'].unique()}")
 
 
 def processfile(dts: Set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter):
-    fdate = datetime.strptime(
-        fname.stem.split("_", 1)[1].split(".", 1)[0], "%Y%m%d_%H%M%S"
-    ).date()
+    fdate = datetime.strptime(fname.stem.split("_", 1)[1].split(".", 1)[0], "%Y%m%d_%H%M%S").date()
     if fdate in dts:
         return
     if fname.name.endswith(".xlsx"):

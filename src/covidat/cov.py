@@ -81,9 +81,7 @@ MARKER_SEQ = (
 
 
 def with_palette(palette, n_colors=10):
-    return plt.rc_context(
-        {"axes.prop_cycle": cycler(color=sns.color_palette(palette, n_colors=n_colors))}
-    )
+    return plt.rc_context({"axes.prop_cycle": cycler(color=sns.color_palette(palette, n_colors=n_colors))})
 
 
 def with_age_palette():
@@ -135,9 +133,7 @@ def labelend2(
 
 def _sortedlabels(ax, mms0, by, cat="Bundesland", x="Datum", fmtval=None):
     hls = list(zip(*ax.get_legend_handles_labels()))
-    label_order = (
-        filterlatest(mms0, x).sort_values(by=by, ascending=False)[cat].unique()
-    )
+    label_order = filterlatest(mms0, x).sort_values(by=by, ascending=False)[cat].unique()
     hls = [(handle, label) for handle, label in hls if label in label_order]
     hls.sort(key=lambda hl: np.where(label_order == hl[1]))
     if fmtval:
@@ -146,27 +142,26 @@ def _sortedlabels(ax, mms0, by, cat="Bundesland", x="Datum", fmtval=None):
             hls[i] = (art, f"{bl}: {fmtval(val)}")
     return zip(*hls)
 
+
 def sortedlabels(ax, mms0, by, cat="Bundesland", x="Datum", fmtval=None):
     hls = list(zip(*ax.get_legend_handles_labels()))
-    label_order = (
-        mms0.loc[~pd.isna(mms0[by])].groupby(cat).agg({
-            by: "last"
-        }).sort_values(by=by, ascending=False).index
-    )
+    label_order = mms0.loc[~pd.isna(mms0[by])].groupby(cat).agg({by: "last"}).sort_values(by=by, ascending=False).index
     hls = [(handle, label) for handle, label in hls if label in label_order]
     hls.sort(key=lambda hl: np.where(label_order == hl[1]))
     if fmtval:
         for i, (art, bl) in enumerate(hls):
-            #vals =  mms0.loc[mms0[cat] == bl, by]
+            # vals =  mms0.loc[mms0[cat] == bl, by]
             val = mms0.loc[mms0[cat] == bl, by].dropna().iloc[-1]
             hls[i] = (art, f"{bl}: {fmtval(val)}")
     return zip(*hls)
+
 
 def sum_rows(df, cname, csval, agg="sum"):
     dfsum = df.groupby(level=[n for n in df.index.names if n != cname]).agg(agg)
     dfsum[cname] = csval
     dfsum.set_index(cname, append=True, inplace=True, verify_integrity=True)
     return dfsum.reorder_levels(df.index.names)
+
 
 def add_sum_rows(df, cname, csval, agg="sum"):
     return pd.concat([df, sum_rows(df, cname, csval, agg)])
@@ -187,10 +182,7 @@ ARCHIVE_PATCH_ROOT = COLLECTROOT / "covid/ages_all"
 DATE_FMT = "%Y%m%d"
 
 
-def plt_mdiff1(
-    ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey=False, color=None
-):
-
+def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey=False, color=None):
     newseries = fs_oo[vcol].rolling(rwidth).sum()
     if rwidth == 1:
         avgseries = fs_oo[vcol].rolling(7).mean()
@@ -198,13 +190,7 @@ def plt_mdiff1(
         newseries = newseries.iloc[-ndays:]
     else:
         ndays = len(newseries)
-    oldseries = (
-        (fs_oo[vcol] * 0)
-        .add(ages_old_oo[vcol], fill_value=0)
-        .rolling(rwidth)
-        .sum()
-        .iloc[-ndays:]
-    )
+    oldseries = (fs_oo[vcol] * 0).add(ages_old_oo[vcol], fill_value=0).rolling(rwidth).sum().iloc[-ndays:]
 
     def subquery(s):
         # return s[(pd.to_datetime("2020-05-01") <= s.index) & (s.index < pd.to_datetime("2020-11-01"))]
@@ -239,9 +225,7 @@ def plt_mdiff1(
             aa=False,
         )
     newstamp = (
-        ("Stand " + fs_oo.iloc[-1]["FileDate"].strftime("%a %x"))
-        if "FileDate" in fs_oo.columns
-        else "Letzter Stand"
+        ("Stand " + fs_oo.iloc[-1]["FileDate"].strftime("%a %x")) if "FileDate" in fs_oo.columns else "Letzter Stand"
     )
     oldstamp = "Stand " + ages_old_oo.iloc[-1]["FileDate"].strftime("%a %x")
     if logview:
@@ -315,33 +299,23 @@ def plt_mdiff(
             # ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator())
             if logview:
                 set_logscale(ax)
-                ax.yaxis.set_major_locator(
-                    matplotlib.ticker.LogLocator(base=10, subs=[0.3, 1], numticks=5)
-                )
+                ax.yaxis.set_major_locator(matplotlib.ticker.LogLocator(base=10, subs=[0.3, 1], numticks=5))
                 # print("setscale", k)
             else:
                 ax.yaxis.set_major_locator(
-                    matplotlib.ticker.MaxNLocator(
-                        "auto", integer=True, min_n_ticks=min(4, maxy_oo)
-                    )
+                    matplotlib.ticker.MaxNLocator("auto", integer=True, min_n_ticks=min(4, maxy_oo))
                 )
             if not sharey:
-                ax.yaxis.set_major_formatter(
-                    matplotlib.ticker.FormatStrFormatter("%.0f")
-                )
+                ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.0f"))
 
         if not sharey:
             ax.tick_params(pad=-5, axis="y")
             if maxy_oo >= 10_000:
-                ax.tick_params(
-                    axis="y", labelsize="x-small" if maxy_oo >= 100_000 else "small"
-                )
+                ax.tick_params(axis="y", labelsize="x-small" if maxy_oo >= 100_000 else "small")
         ages_old_oo = ages_old[ages_old[catcol] == k].set_index("Datum")
         diffsum = fs_oo[vcol + "Sum"].iloc[-1] - ages_old_oo[vcol + "Sum"].iloc[-1]
         ax.set_title(f"{k} ({diffsum:+n})", y=0.94)
-        plt_mdiff1(
-            ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey, color=color
-        )
+        plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey, color=color)
         maxy = max(fs_oo[vcol].iloc[-ndays:].rolling(rwidth).sum().max(), maxy)
         if ax in axs[-1]:
             set_date_opts(
@@ -356,9 +330,7 @@ def plt_mdiff(
         # break
 
         if ax is axs.flat[0]:
-            fig.legend(
-                frameon=False, ncol=3, loc="upper center", bbox_to_anchor=(0.5, 0.93)
-            )
+            fig.legend(frameon=False, ncol=3, loc="upper center", bbox_to_anchor=(0.5, 0.93))
     print(maxy, sharey)
     fig.subplots_adjust(wspace=0.03 if sharey else (0.11 if maxy >= 10_000 else 0.25))
     if ndays >= 90:
@@ -396,7 +368,6 @@ def adjust_cmap(plot_data, cmap=None, vmin=None, vmax=None, center=None, robust=
 
     # Recenter a divergent colormap
     if center is not None:
-
         # Copy bad values
         # in mpl<3.2 only masked values are honored with "bad" color spec
         # (see https://github.com/matplotlib/matplotlib/pull/14257)
@@ -460,9 +431,7 @@ ICU_LIM_GREEN_BY_STATE = {
 
 
 class StackBarPlotter:
-    def __init__(
-        self, ax: plt.Axes, xs, allow_negative=False, areamode=False, **kwargs
-    ):
+    def __init__(self, ax: plt.Axes, xs, allow_negative=False, areamode=False, **kwargs):
         self.ax = ax
         self.xs = xs
         self.kwargs = kwargs
@@ -616,9 +585,10 @@ def get_zip_name(dt: date, pattern: Union[str, typing.Iterable[str]]) -> Path:
     paths = sorted(get_data_path(dt).glob(pattern))
     if not paths:
         raise NoDataError(dt)
-    #if len(paths) > 1:
+    # if len(paths) > 1:
     #    logger.warning("More than one ZIP for dt=%s: %s", dt, paths)
     return paths[-1]
+
 
 def loadall(
     fname: str,
@@ -667,9 +637,7 @@ def get_day_zip_name(
         try:
             return get_zip_name(today - timedelta(1), pattern)
         except NoDataError:
-            logger.warning(
-                "No data for yesterday either, trying day before: %s", pattern
-            )
+            logger.warning("No data for yesterday either, trying day before: %s", pattern)
             return get_zip_name(today - timedelta(2), pattern)
 
 
@@ -686,9 +654,7 @@ def load_day(
         except KeyError as e:
             raise NoDataError(daydate) from e
         with dayfile:
-            return typing.cast(
-                pd.DataFrame, pd.read_csv(dayfile, sep=";", **(csv_args or {}))
-            )
+            return typing.cast(pd.DataFrame, pd.read_csv(dayfile, sep=";", **(csv_args or {})))
 
 
 def simplify_agedata(ad: pd.DataFrame) -> pd.DataFrame:
@@ -707,17 +673,11 @@ def simplify_agedata(ad: pd.DataFrame) -> pd.DataFrame:
 
 
 def parseutc_at(col, format=AGES_TIME_FMT):
-    return pd.to_datetime(col, utc=True, format=format).dt.tz_convert(
-        "Europe/Vienna"
-    )
+    return pd.to_datetime(col, utc=True, format=format).dt.tz_convert("Europe/Vienna")
 
 
 def parsedtonly(col, format=AGES_DATE_FMT):
-    return (
-        pd.to_datetime(col, utc=True, format=format)
-        .tz_localize(None)
-        .normalize()
-    )
+    return pd.to_datetime(col, utc=True, format=format).tz_localize(None).normalize()
 
 
 def mangle_eimpf(eimpf) -> pd.DataFrame:
@@ -792,9 +752,7 @@ def load_eimpf() -> pd.DataFrame:
 
 
 def set_week_labels(fig: plt.Figure, ax: plt.Axes):
-    ax.xaxis.set_major_locator(
-        matplotlib.dates.WeekdayLocator(byweekday=matplotlib.dates.MO, interval=1)
-    )
+    ax.xaxis.set_major_locator(matplotlib.dates.WeekdayLocator(byweekday=matplotlib.dates.MO, interval=1))
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("KW%W"))
     fig.autofmt_xdate()
 
@@ -808,9 +766,7 @@ def calc_shifted(  # TODO: Read https://pandas.pydata.org/docs/user_guide/groupb
     newcols: Optional[List[str]] = None,
     fill=np.nan,
 ):
-    ds.sort_values(
-        by=[by, "Datum"] if isinstance(by, str) else by + ["Datum"], inplace=True
-    )
+    ds.sort_values(by=[by, "Datum"] if isinstance(by, str) else by + ["Datum"], inplace=True)
     shifted = ds.shift(periods)
     cols = ds.columns.copy()
     yield shifted
@@ -818,9 +774,7 @@ def calc_shifted(  # TODO: Read https://pandas.pydata.org/docs/user_guide/groupb
     if newcols is None:
         newcols = autonewcols
     elif not autonewcols.isin(newcols).all():
-        raise ValueError(
-            "Created columns that were not specified: " + repr(autonewcols)
-        )
+        raise ValueError("Created columns that were not specified: " + repr(autonewcols))
     if isinstance(by, str):
         mask = ds[by] != shifted[by]
     else:
@@ -832,46 +786,39 @@ def calc_shifted(  # TODO: Read https://pandas.pydata.org/docs/user_guide/groupb
 
 def load_bezirke(daydate: typing.Optional[date] = None) -> pd.DataFrame:
     #  df = add_date(loadall("CovidFaelle_GKZ.csv"), "Datum")
-    df = add_date(
-        load_day("CovidFaelle_Timeline_GKZ.csv", daydate), "Time", format=AGES_TIME_FMT
-    )
+    df = add_date(load_day("CovidFaelle_Timeline_GKZ.csv", daydate), "Time", format=AGES_TIME_FMT)
     df.rename(columns={"AnzahlTotTaeglich": "AnzahlTot"}, inplace=True)
     df["inz"] = df["AnzahlFaelle7Tage"] / df["AnzEinwohner"] * 100_000
     return df
 
 
 def enrich_bez(bez_orig, fs):
-    bez = (pd.concat([
-        bez_orig.set_index(["Datum", "Bezirk"]),
-        fs.query("Bundesland != 'Wien'")
-            .rename(columns={"Bundesland": "Bezirk"})
-            .set_index(["Datum", "Bezirk"])
-        ])
+    bez = (
+        pd.concat(
+            [
+                bez_orig.set_index(["Datum", "Bezirk"]),
+                fs.query("Bundesland != 'Wien'")
+                .rename(columns={"Bundesland": "Bezirk"})
+                .set_index(["Datum", "Bezirk"]),
+            ]
+        )
     ).reset_index()
     bez["InfektionenPro100"] = bez["AnzahlFaelleSum"] / bez["AnzEinwohner"] * 100
     bez["BundeslandID"] = bez["GKZ"] // 100
     bez["AnzahlFaelleSumProEW"] = bez["AnzahlFaelleSum"] / bez["AnzEinwohner"]
     bez["AnzahlFaelleProEW"] = bez["AnzahlFaelle"] / bez["AnzEinwohner"]
-    bez.loc[np.isfinite(bez["GKZ"]), "Bundesland"] = bez["BundeslandID"].map(
-        BUNDESLAND_BY_ID
-    )
+    bez.loc[np.isfinite(bez["GKZ"]), "Bundesland"] = bez["BundeslandID"].map(BUNDESLAND_BY_ID)
     bez.loc[~np.isfinite(bez["GKZ"]), "Bundesland"] = bez["Bezirk"]
 
     with calc_shifted(bez, "Bezirk", 7, newcols=["inz_a7", "dead"]):
         bez["inz_a7"] = bez["inz"].rolling(7).mean()
         bez["dead"] = calc_inz(bez, "AnzahlTot")
     with calc_shifted(bez, "Bezirk", 14, newcols=["dead14"]):
-        bez["dead14"] = (
-            bez["AnzahlTot"].rolling(14).sum() / bez["AnzEinwohner"] * 100_000
-        )
+        bez["dead14"] = bez["AnzahlTot"].rolling(14).sum() / bez["AnzEinwohner"] * 100_000
     with calc_shifted(bez, "Bezirk", 28, newcols=["dead28"]):
-        bez["dead28"] = (
-            bez["AnzahlTot"].rolling(28).sum() / bez["AnzEinwohner"] * 100_000
-        )
+        bez["dead28"] = bez["AnzahlTot"].rolling(28).sum() / bez["AnzEinwohner"] * 100_000
     with calc_shifted(bez, "Bezirk", 91, newcols=["dead91"]):
-        bez["dead91"] = (
-            bez["AnzahlTot"].rolling(91).sum() / bez["AnzEinwohner"] * 100_000
-        )
+        bez["dead91"] = bez["AnzahlTot"].rolling(91).sum() / bez["AnzEinwohner"] * 100_000
     enrich_inz(bez, "InfektionenPro100")
     enrich_inz(bez, "inz_a7")
     enrich_inz(bez)
@@ -965,39 +912,27 @@ AGE_TO_MAP = {
 
 def enrich_ag(ag_o, agefromto=True, parsedate=True, bev: typing.Optional[pd.Series] = None):
     catcols = ["BundeslandID", "AltersgruppeID", "Geschlecht"]
-    faelle_ag = (
-        norm_df(ag_o, datecol="Time", format=AGES_TIME_FMT) if parsedate else ag_o
-    )
+    faelle_ag = norm_df(ag_o, datecol="Time", format=AGES_TIME_FMT) if parsedate else ag_o
     faelle_ag["AnzEinwohnerFixed"] = faelle_ag["AnzEinwohner"]
     if bev is not None:
         faelle_ag.set_index(["Datum"] + catcols, inplace=True)
-        #display("f", faelle_ag.index.dtypes)
-        #display("b", bev.index.dtypes)
+        # display("f", faelle_ag.index.dtypes)
+        # display("b", bev.index.dtypes)
         faelle_ag["AnzEinwohner"] = bev
         faelle_ag.reset_index(inplace=True)
     if "AnzahlFaelleSum" not in faelle_ag.columns:
-        faelle_ag = faelle_ag.rename(
-            columns={"Anzahl": "AnzahlFaelleSum", "AnzahlTot": "AnzahlTotSum"}
-        )
+        faelle_ag = faelle_ag.rename(columns={"Anzahl": "AnzahlFaelleSum", "AnzahlTot": "AnzahlTotSum"})
     if agefromto:
-        faelle_ag["AgeFrom"] = (
-            faelle_ag["Altersgruppe"].map(AGE_FROM_MAP).astype(np.uint8)
-        )
+        faelle_ag["AgeFrom"] = faelle_ag["Altersgruppe"].map(AGE_FROM_MAP).astype(np.uint8)
         faelle_ag["AgeTo"] = faelle_ag["Altersgruppe"].map(AGE_TO_MAP).astype(np.uint8)
     if "FileDate" in ag_o.columns:
         catcols.append("FileDate")
     with calc_shifted(faelle_ag, catcols, newcols=["AnzahlFaelle"]) as shifted:
-        faelle_ag["AnzahlFaelle"] = (
-            faelle_ag["AnzahlFaelleSum"] - shifted["AnzahlFaelleSum"]
-        )
+        faelle_ag["AnzahlFaelle"] = faelle_ag["AnzahlFaelleSum"] - shifted["AnzahlFaelleSum"]
     with calc_shifted(faelle_ag, catcols, 7) as shifted:
-        faelle_ag["AnzahlFaelle7Tage"] = (
-            faelle_ag["AnzahlFaelleSum"] - shifted["AnzahlFaelleSum"]
-        )
+        faelle_ag["AnzahlFaelle7Tage"] = faelle_ag["AnzahlFaelleSum"] - shifted["AnzahlFaelleSum"]
         faelle_ag["inz"] = calc_inz(faelle_ag)
-    faelle_ag["Gruppe"] = faelle_ag["Bundesland"].str.cat(
-        [faelle_ag["Altersgruppe"], faelle_ag["Geschlecht"]], sep=" "
-    )
+    faelle_ag["Gruppe"] = faelle_ag["Bundesland"].str.cat([faelle_ag["Altersgruppe"], faelle_ag["Geschlecht"]], sep=" ")
     return faelle_ag
 
 
@@ -1029,9 +964,7 @@ def g_to_pct(g):
 
 
 def set_pctdiff_formatter(ax):
-    ax.yaxis.set_major_formatter(
-        matplotlib.ticker.FuncFormatter(lambda v, _: g_to_pct(v))
-    )
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: g_to_pct(v)))
 
 
 def plt_manychange(
@@ -1057,12 +990,8 @@ def plt_manychange(
 
     def plt_rising(col, d_col, **scatterargs):
         rising = df[d_col] >= 0
-        sc_rising = ax.scatter(
-            y=df.loc[rising, catcol], x=df.loc[rising, col], marker="4", **scatterargs
-        )
-        sc_falling = ax.scatter(
-            y=df.loc[~rising, catcol], x=df.loc[~rising, col], marker="3", **scatterargs
-        )
+        sc_rising = ax.scatter(y=df.loc[rising, catcol], x=df.loc[rising, col], marker="4", **scatterargs)
+        sc_falling = ax.scatter(y=df.loc[~rising, catcol], x=df.loc[~rising, col], marker="3", **scatterargs)
         return sc_rising, sc_falling
 
     ax = df.plot(
@@ -1126,9 +1055,7 @@ def plt_manychange(
             linewidth=0.5,
         )
     xlim = ax.get_xlim()
-    ax.set_xlim(
-        (df[["inz", "inz_prev", "inz_prev7", "inz_prev14"]].min().min(), xlim[1])
-    )
+    ax.set_xlim((df[["inz", "inz_prev", "inz_prev7", "inz_prev14"]].min().min(), xlim[1]))
     # ax.set_yticklabels(ha="left")
     curinz = ax.plot(df[inzcol], df[catcol], color="k", alpha=0.25)
 
@@ -1151,9 +1078,7 @@ def plt_manychange(
     return ax
 
 
-def calc_inz(
-    df: pd.DataFrame, dailycol: str = "AnzahlFaelle", ewcol: str = "AnzEinwohner"
-):
+def calc_inz(df: pd.DataFrame, dailycol: str = "AnzahlFaelle", ewcol: str = "AnzEinwohner"):
     # The order here is important to not get a (tiny) negative result.
     # Numerical instability is a pain...
     return df[dailycol].rolling(7).sum() / df[ewcol] * 100_000
@@ -1194,9 +1119,7 @@ def load_faelle(daydate: typing.Optional[date] = None, bev: typing.Optional[pd.S
         ag_coarse["inz"] = calc_inz(ag_coarse)
     idxs = ["Datum", "BundeslandID", "Bundesland"]
     ag_coarse.set_index(["AGCoarse"] + idxs, inplace=True)
-    faelle = add_date(
-        load_day("CovidFaelle_Timeline.csv", daydate), "Time", format=AGES_TIME_FMT
-    )
+    faelle = add_date(load_day("CovidFaelle_Timeline.csv", daydate), "Time", format=AGES_TIME_FMT)
     faelle["AnzEinwohnerFixed"] = faelle["AnzEinwohner"]
     if bev is not None:
         faelle.set_index(["Datum", "BundeslandID"], inplace=True)
@@ -1224,13 +1147,9 @@ def load_faelle(daydate: typing.Optional[date] = None, bev: typing.Optional[pd.S
     enrich_hosp_data(faelle)
     with calc_shifted(faelle, "Bundesland", 7, newcols=["inz", "dead"]):
         faelle["inz"] = calc_inz(faelle)
-        faelle["dead"] = (faelle["AnzahlTot"] / faelle["AnzEinwohner"]).rolling(
-            7
-        ).sum() * 100_000
+        faelle["dead"] = (faelle["AnzahlTot"] / faelle["AnzEinwohner"]).rolling(7).sum() * 100_000
     with calc_shifted(faelle, "Bundesland", 28):
-        faelle["dead28"] = (faelle["AnzahlTot"] / faelle["AnzEinwohner"]).rolling(
-            28
-        ).sum() * 100_000
+        faelle["dead28"] = (faelle["AnzahlTot"] / faelle["AnzEinwohner"]).rolling(28).sum() * 100_000
     return faelle
 
 
@@ -1242,9 +1161,7 @@ bglinestyle_nc = dict(zorder=-1, linewidth=0.7)
 bglinestyle = dict(color="grey", **bglinestyle_nc)
 
 
-def plot_with_hline(
-    ds: pd.DataFrame, ax: plt.Axes, col: str, color: str, label: str, **kwargs
-):
+def plot_with_hline(ds: pd.DataFrame, ax: plt.Axes, col: str, color: str, label: str, **kwargs):
     ls = dict(bglinestyle)
     ls["color"] = color
     ds.plot(ax=ax, color=color, label=label, y=col, **kwargs)
@@ -1388,19 +1305,13 @@ BEZ_GKZ_GEO_ORDER = (
     203,
     206,  # AT212 Oberkärnten
 )
-assert len(set(BEZ_GKZ_GEO_ORDER)) == len(BEZ_GKZ_GEO_ORDER), str(
-    Counter(BEZ_GKZ_GEO_ORDER).most_common(1)
-)
+assert len(set(BEZ_GKZ_GEO_ORDER)) == len(BEZ_GKZ_GEO_ORDER), str(Counter(BEZ_GKZ_GEO_ORDER).most_common(1))
 
 
 def set_logscale(ax, reduced=False, axis="y"):
     (ax.set_yscale if axis == 'y' else ax.set_xscale)("log", base=2)
     laxis = ax.yaxis if axis == 'y' else ax.xaxis
-    laxis.set_major_locator(
-        matplotlib.ticker.LogLocator(
-            base=10, subs=[0.3, 1] if reduced else [0.2, 0.3, 0.5, 1]
-        )
-    )
+    laxis.set_major_locator(matplotlib.ticker.LogLocator(base=10, subs=[0.3, 1] if reduced else [0.2, 0.3, 0.5, 1]))
     fmt = matplotlib.ticker.ScalarFormatter(useOffset=False)
     fmt.set_scientific(False)
     laxis.set_major_formatter(fmt)
@@ -1424,25 +1335,23 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
     ax.set_ylabel("Faktor Inzidenz ggü. 7 Tage vorher")
     # faelle[["g_inz7a"]].plot(ax=ax, color="blue")
     ax2 = ax.twinx()
-    #ax2.set_yscale("log", base=2)
+    # ax2.set_yscale("log", base=2)
     ax2.set_ylabel("Pro 100.000 Personen")
     set_logscale(ax2)
-    #ax2.set_yticks(INZ_TICKS)
+    # ax2.set_yticks(INZ_TICKS)
 
     # pred = pd.to_datetime(latest + timedelta(14))
     # faelle.loc[pred, "inz"] = faelle.iloc[-1]["inz"] * faelle.iloc[-1]["g_inz7"] ** 2
 
     maxy = None
     if "Abwassersignal" in faelle.columns or "Abwasser_y" in faelle.columns:
-        #faelle["i14"] = (faelle["AnzahlFaelle"].rolling(14).sum()) / faelle["AnzEinwohner"] * 100_000
-        plot_with_hline(
-            faelle, ax2, "inz", "darkgreen", "7-Tage-Inzidenz"
-        )
+        # faelle["i14"] = (faelle["AnzahlFaelle"].rolling(14).sum()) / faelle["AnzEinwohner"] * 100_000
+        plot_with_hline(faelle, ax2, "inz", "darkgreen", "7-Tage-Inzidenz")
         maxy = faelle["inz"].max()
 
         if "Abwassersignal" in faelle.columns:
             abwcol = "Abwassersignal"
-            if False: # Annahme: Abwassersignal ist roh, d.h. nicht auf Abdeckung & EW normiert
+            if False:  # Annahme: Abwassersignal ist roh, d.h. nicht auf Abdeckung & EW normiert
                 msk_erw = faelle.index >= pd.to_datetime("2023-02-01")
 
                 # "Rund 52%" https://web.archive.org/web/20230110152232/https://abwassermonitoring.at/dashboard/
@@ -1451,47 +1360,50 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
                 # "Mehr als 58%" https://abwassermonitoring.at/dashboard/
                 faelle.loc[msk_erw, "Abwassersignal"] = faelle["Abwassersignal"] / (faelle["AnzEinwohner"] * 0.582)
 
-                faelle["Abwassersignal"] *= 7 # "Daumen mal Pi"
-            else: # Annahme: Signal ist bereits auf abgedeckte Bev. normiert
+                faelle["Abwassersignal"] *= 7  # "Daumen mal Pi"
+            else:  # Annahme: Signal ist bereits auf abgedeckte Bev. normiert
                 # "Daumen mal Pi"
                 # x2 wäre ggf. angemessen wegen DZ im Jänner 2022 http://www.dexhelpp.at/de/immunisierungsgrad/
-                faelle["Abwassersignal"] /= 650_000 # /= (650_000 / 2)
-        else: # Abwasser_y
+                faelle["Abwassersignal"] /= 650_000  # /= (650_000 / 2)
+        else:  # Abwasser_y
             abwcol = "Abwasser_y"
             syncarea = faelle.query("Datum >= '2022-09-01' and Datum <= '2022-11-01'")
             maxabwi = syncarea["Abwasser_y"].idxmax()
-            maxinz = syncarea.loc[
-                (syncarea.index >= maxabwi - timedelta(14)) &
-                (syncarea.index <= maxabwi + timedelta(14)), "inz"].max() * 2 # Guesstimate
+            maxinz = (
+                syncarea.loc[
+                    (syncarea.index >= maxabwi - timedelta(14)) & (syncarea.index <= maxabwi + timedelta(14)), "inz"
+                ].max()
+                * 2
+            )  # Guesstimate
             adj = maxinz / syncarea.loc[maxabwi, "Abwasser_y"]
             faelle["Abwasser_y"] = faelle["Abwasser_y"].where(faelle.index >= pd.to_datetime("2022-09-01"))
             faelle["Abwasser_y"] *= adj
 
-        #display(faelle[np.isfinite(faelle[abwcol])][abwcol].iloc[-1])
-        plot_with_hline(faelle[np.isfinite(faelle[abwcol])], ax2, abwcol, "hotpink",
-                        "Abwassersignal (Inzidenz-justiert, ohne Einheit)")
+        # display(faelle[np.isfinite(faelle[abwcol])][abwcol].iloc[-1])
+        plot_with_hline(
+            faelle[np.isfinite(faelle[abwcol])],
+            ax2,
+            abwcol,
+            "hotpink",
+            "Abwassersignal (Inzidenz-justiert, ohne Einheit)",
+        )
         maxy = max(maxy, faelle[abwcol].max())
     elif "ag55_inz" in faelle.columns:
-        plot_with_hline(
-            faelle, ax2, "agU55_inz", "springgreen", "7-Tage-Inzidenz Altersgruppe <55"
-        )
-        plot_with_hline(
-            faelle, ax2, "ag55_inz", "yellowgreen", "7-Tage-Inzidenz Altersgruppe 55+"
-        )
+        plot_with_hline(faelle, ax2, "agU55_inz", "springgreen", "7-Tage-Inzidenz Altersgruppe <55")
+        plot_with_hline(faelle, ax2, "ag55_inz", "yellowgreen", "7-Tage-Inzidenz Altersgruppe 55+")
         maxy = faelle[["agU55_inz", "ag55_inz"]].max().max()
     else:
         plot_with_hline(faelle, ax2, "inz", "darkgreen", "7-Tage-Inzidenz")
         maxy = faelle["inz"].max()
     if "nhosp" in faelle.columns:
         if "HospPostCov" in faelle.columns:
-            phosp = (
-                faelle["HospPostCov"]
-                .resample("1D")
-                .interpolate()
-                / faelle["AnzEinwohner"] * 100_000)
-            plot_with_hline(faelle.query("Datum >= '2022-11-01'"), ax2, "nhosp", "wheat",
-                            "_Normalstationsbelegung ohne PostCov")
-            faelle["nhosp"] = faelle["nhosp"].add(phosp.where(faelle.index >= pd.to_datetime("2022-11-02")), fill_value=0)
+            phosp = faelle["HospPostCov"].resample("1D").interpolate() / faelle["AnzEinwohner"] * 100_000
+            plot_with_hline(
+                faelle.query("Datum >= '2022-11-01'"), ax2, "nhosp", "wheat", "_Normalstationsbelegung ohne PostCov"
+            )
+            faelle["nhosp"] = faelle["nhosp"].add(
+                phosp.where(faelle.index >= pd.to_datetime("2022-11-02")), fill_value=0
+            )
             extralbl = " (hell: Zählweise ab 2.11.22)"
         else:
             extralbl = ""
@@ -1513,9 +1425,7 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
     one_year_earlier = latest - np.timedelta64(365, "D")
     if first < one_year_earlier and False:
         ax.axvline(x=one_year_earlier, linestyle="--", color="k")
-        ax.text(
-            one_year_earlier, ymax * 0.99, one_year_earlier.strftime(" %x"), va="top"
-        )
+        ax.text(one_year_earlier, ymax * 0.99, one_year_earlier.strftime(" %x"), va="top")
     # ax.set_yticks([0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 10])
     ax.axhline(y=1, color="blue", linewidth=0.5, alpha=0.8)
     ax.set_ylim(top=ymax, bottom=max(0, faelle.iloc[60:][growth_col].min() * 0.95))
@@ -1537,12 +1447,7 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
     # ax.legend(loc="upper left", prop=props)
     # ax2.legend(loc="lower right", bbox_to_anchor=(0.77, 0), prop=props)
     # fig.legend(loc="upper left", props=props, ncols=2)
-    legend_info = [
-        x1 + x2
-        for x1, x2 in zip(
-            ax.get_legend_handles_labels(), ax2.get_legend_handles_labels()
-        )
-    ]
+    legend_info = [x1 + x2 for x1, x2 in zip(ax.get_legend_handles_labels(), ax2.get_legend_handles_labels())]
     ax2.legend(
         *legend_info,
         loc="upper center",
@@ -1624,9 +1529,7 @@ def group_impfungen_by_bez(gis: pd.DataFrame) -> pd.DataFrame:
 
     # Wien braucht eine Speziallösung da es in den AGES-Daten nicht
     # in Bezirke eingeteilt ist, in den Impfdaten (Gemeindeebene) aber schon
-    bis.loc[("Wien", 9, 900, bis.index.get_level_values("Datum")[-1])] = bis.xs(
-        "Wien"
-    ).sum()
+    bis.loc[("Wien", 9, 900, bis.index.get_level_values("Datum")[-1])] = bis.xs("Wien").sum()
     bis.reset_index(["Bundesland", "BundeslandID"], inplace=True)
 
     for pctcol in bis.columns:
@@ -1652,17 +1555,11 @@ def filterlatest(ds: pd.DataFrame, x="Datum") -> pd.DataFrame:
     return ds[ds[x] == ds[x].iloc[-1]]
 
 
-def print_predictions(
-    faelle_at: pd.DataFrame, col: str, name: str, target: int = 400, days=14
-):
+def print_predictions(faelle_at: pd.DataFrame, col: str, name: str, target: int = 400, days=14):
     ds = faelle_at[col]
     today = faelle_at.index.get_level_values("Datum")[-1]
     cur_inz = ds.iloc[-1]
-    print(
-        "{:40} (zuletzt {:6.1f}) in {:2.0f} Tagen / {:4.0f} erreicht am:".format(
-            name, cur_inz, days, target
-        )
-    )
+    print("{:40} (zuletzt {:6.1f}) in {:2.0f} Tagen / {:4.0f} erreicht am:".format(name, cur_inz, days, target))
     logdiff = np.log(target) - np.log(cur_inz)
 
     def indays(n):
@@ -1701,11 +1598,7 @@ def main():
         bez_today = filterlatest(bez_recent)
         top = bez_today.sort_values(by="inz", ascending=False).iloc[:8]["Bezirk"]
         render_bez(bez_recent, top, "Hochinzidenz").savefig("df-top.png")
-        hot = (
-            bez_today.sort_values(by="inz_g7", ascending=False)
-            .query("inz > 10")
-            .iloc[:8]["Bezirk"]
-        )
+        hot = bez_today.sort_values(by="inz_g7", ascending=False).query("inz > 10").iloc[:8]["Bezirk"]
         render_bez(bez_recent, hot, "Meiststeigend Woche & > 10").savefig("df-hot.png")
         bez_of_interest = ("Wien", "Graz(Stadt)", "Linz(Stadt)")
         render_bez(bez_recent, bez_of_interest, "Auswahl").savefig("df-selected.png")
@@ -1729,9 +1622,7 @@ def main():
         print_predictions(faelle_at, "inz", "Inzidenz (Ges.)")
         print_predictions(faelle_at, "inz", "Inzidenz (Ges.)", days=18, target=600)
         faelle_at["AnzahlFaelle_a7"] = faelle_at["AnzahlFaelle"].rolling(7).mean()
-        print_predictions(
-            faelle_at, "AnzahlFaelle_a7", "Neuinfektion", days=14, target=40_000
-        )
+        print_predictions(faelle_at, "AnzahlFaelle_a7", "Neuinfektion", days=14, target=40_000)
         print_predictions(
             faelle_at,
             "FZHospAlle_a3",
@@ -1800,33 +1691,27 @@ def main():
 
 
 def set_percent_opts(ax: plt.Axes, freq=None, decimals=0, xmax=1):
-    ax.get_yaxis().set_major_formatter(
-        matplotlib.ticker.PercentFormatter(xmax=xmax, decimals=decimals)
-    )
+    ax.get_yaxis().set_major_formatter(matplotlib.ticker.PercentFormatter(xmax=xmax, decimals=decimals))
     if freq is not None:
         ax.get_yaxis().set_major_locator(matplotlib.ticker.MultipleLocator(freq))
 
 
-def set_date_opts(
-    ax: plt.Axes, xs: pd.Series = None, showyear=None, showday=None, week_always=False, autoyear=False
-):
+def set_date_opts(ax: plt.Axes, xs: pd.Series = None, showyear=None, showday=None, week_always=False, autoyear=False):
     n = (
         ax.get_xlim()[1] - ax.get_xlim()[0]
         if xs is None
         else (matplotlib.dates.date2num(xs.max()) - matplotlib.dates.date2num(xs.min()))
     )
-    #print("n=",n)
+    # print("n=",n)
 
     weekly_mode = n <= 120
     ax.xaxis.set_major_locator(
-        matplotlib.dates.WeekdayLocator(matplotlib.dates.MONDAY)
-        if weekly_mode
-        else matplotlib.dates.MonthLocator()
+        matplotlib.dates.WeekdayLocator(matplotlib.dates.MONDAY) if weekly_mode else matplotlib.dates.MonthLocator()
     )
     if n >= 330 and showyear is None:
         showyear = True
     if showyear and autoyear:
-        #print("autoyear!")
+        # print("autoyear!")
         ax.figure.autofmt_xdate()
     ax.xaxis.set_major_formatter(
         matplotlib.dates.DateFormatter("%d.%m" + (".%y" if showyear else ""))
@@ -1834,9 +1719,7 @@ def set_date_opts(
         else matplotlib.dates.DateFormatter("%b %y" if showyear else "%b")
     )
     if not weekly_mode and week_always:
-        ax.xaxis.set_minor_locator(
-            matplotlib.dates.WeekdayLocator(matplotlib.dates.MONDAY)
-        )
+        ax.xaxis.set_minor_locator(matplotlib.dates.WeekdayLocator(matplotlib.dates.MONDAY))
         ax.grid(which="major", axis="x", lw=1, zorder=-100)
         ax.grid(which="minor", axis="x", lw=0.5, zorder=1)
     if showday or (n <= 43 and showday is None):
@@ -1851,6 +1734,7 @@ def set_date_opts(
             left=matplotlib.dates.date2num(xs.min()) - 0.5,
             right=matplotlib.dates.date2num(xs.max()) + 0.5,
         )
+
 
 def plt_cat_dists(
     data_cat: pd.DataFrame,
@@ -1896,9 +1780,7 @@ def plt_cat_dists(
             **styleargs,
         )
         if labelend:
-            labelend2(
-                ax, data_cat, "AnzahlFaelleSumProEW", cats=catcol, shorten=lambda c: c
-            )
+            labelend2(ax, data_cat, "AnzahlFaelleSumProEW", cats=catcol, shorten=lambda c: c)
         artists, labels = ax.get_legend_handles_labels()
         bev_idx = labels.index("AnzEinwohner")
         artists, labels = artists[:bev_idx], labels[:bev_idx]
@@ -1908,9 +1790,7 @@ def plt_cat_dists(
             vals = data_cat[data_cat[catcol] == label]
             if len(vals) <= 0:
                 continue
-            labels[
-                i
-            ] += f": {vals.loc[vals.last_valid_index()]['AnzahlFaelleSumProEW']:.0%}"
+            labels[i] += f": {vals.loc[vals.last_valid_index()]['AnzahlFaelleSumProEW']:.0%}"
         # ax.set_legend_handles_labels(artists, labels)
         ax.legend(artists, labels)
         ax.set_ylabel(title)
@@ -1930,9 +1810,7 @@ def plt_cat_dists(
 
     def norm100agg(df):
         df = df.copy()
-        df["AnzahlFaelleSumProEW"] = (
-            df["AnzahlFaelleSum"] / df["AnzahlFaelleSum"].iloc[-1]
-        )
+        df["AnzahlFaelleSumProEW"] = df["AnzahlFaelleSum"] / df["AnzahlFaelleSum"].iloc[-1]
         return df
 
     def norm100(df):
@@ -1940,8 +1818,7 @@ def plt_cat_dists(
         for cat in df[catcol].unique():
             mask = df[catcol] == cat
             df.loc[mask, "AnzahlFaelleSumProEW"] = (
-                df.loc[mask, "AnzahlFaelleSum"]
-                / df.loc[mask, "AnzahlFaelleSum"].iloc[-1]
+                df.loc[mask, "AnzahlFaelleSum"] / df.loc[mask, "AnzahlFaelleSum"].iloc[-1]
             )
         return df
 
@@ -2099,9 +1976,7 @@ def plt_cat_dists(
         fig = plt.Figure()
         ax = fig.subplots()
         cov.plt_age_sums_ax(ax, agd_sums_at, shortrange, "AnzahlFaelle")
-        ax.set_title(
-            f"{bundesland}: Fälle der letzten Tage je {catcol}{stamp}", fontsize=10
-        )
+        ax.set_title(f"{bundesland}: Fälle der letzten Tage je {catcol}{stamp}", fontsize=10)
         cov.ag_def_legend(fig)
         display(fig)
 
@@ -2130,10 +2005,7 @@ def plt_cat_dists(
         )
         ax2.set_ylim(
             bottom=0,
-            top=np.ceil(
-                (data_agg["AnzahlFaelle"].iloc[-shortrange:].max() + 100) / 100.0
-            )
-            * 100,
+            top=np.ceil((data_agg["AnzahlFaelle"].iloc[-shortrange:].max() + 100) / 100.0) * 100,
         )
         ax2.set_ylabel("Anzahl neuer Fälle")
         ax2.grid(False)
@@ -2144,9 +2016,7 @@ def plt_cat_dists(
         ax2.tick_params(axis="x", bottom=False, labelbottom=False)
 
     fig = plt.Figure(figsize=(10, 5))
-    fig.suptitle(
-        f"{bundesland}: Fallanteil pro Tag je {catcol}{stamp}", y=1.01, size=11
-    )
+    fig.suptitle(f"{bundesland}: Fallanteil pro Tag je {catcol}{stamp}", y=1.01, size=11)
     ax = fig.subplots()
     ax.set_ylabel("Anteil an neuen Fällen")
     add_casenums(ax)
@@ -2204,9 +2074,7 @@ def plt_cat_dists(
     display(fig)
 
     fig = plt.Figure(figsize=(10, 5))
-    fig.suptitle(
-        f"{bundesland}: Verhältnisse Tagesinzidenz je {catcol}{stamp}", y=1.01, size=11
-    )
+    fig.suptitle(f"{bundesland}: Verhältnisse Tagesinzidenz je {catcol}{stamp}", y=1.01, size=11)
     ax = fig.subplots()
     ax.set_ylabel("Anteil an Inzidenzsumme")
     add_casenums(ax)

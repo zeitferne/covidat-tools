@@ -24,8 +24,6 @@ def main():
     pdir = pdir.replace("/", r"[/\\]")
     pdir_pat = re.compile(pdir.encode("utf-8"), re.IGNORECASE)
 
-
-
     output_dir = "gh-pages/export"
     if os.path.exists(output_dir):
         rmtree(output_dir)
@@ -34,7 +32,7 @@ def main():
     for nbfile in Path(".").glob("*.ipynb"):
         no_input = b"#@export: --no-input" in nbfile.read_bytes()[:16_000]
 
-        exportargs =  [
+        exportargs = [
             which("jupyter"),
             "nbconvert",
             "--to=html",

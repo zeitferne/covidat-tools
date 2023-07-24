@@ -27,6 +27,7 @@ import logging
 from .util import Openable, COLLECTROOT
 import os
 import sys
+
 try:
     from tweepy import Client  # type: ignore
 except ModuleNotFoundError as exc:
@@ -47,9 +48,7 @@ class DayData:
 
     @property
     def last_date(self) -> pd.Timestamp:
-        return typing.cast(
-            pd.Timestamp, self.agdata.index.get_level_values("Datum")[-1]
-        )
+        return typing.cast(pd.Timestamp, self.agdata.index.get_level_values("Datum")[-1])
 
 
 @dataclass(frozen=True)
@@ -118,14 +117,10 @@ def load_dead(fname: Openable) -> DayData:
             with zf.open("Version.csv") as verf:
                 verdata = pd.read_csv(verf, **csvargs)
             with zf.open("CovidFaelle_Timeline_GKZ.csv") as bezf:
-                bez = pd.read_csv(
-                    bezf, dtype=bezcols, usecols=list(bezcols.keys()), **csvargs
-                )
+                bez = pd.read_csv(bezf, dtype=bezcols, usecols=list(bezcols.keys()), **csvargs)
 
             with zf.open("CovidFaelle_Altersgruppe.csv") as agf:
-                ag = pd.read_csv(
-                    agf, dtype=agcols, usecols=list(agcols.keys()), **csvargs
-                )
+                ag = pd.read_csv(agf, dtype=agcols, usecols=list(agcols.keys()), **csvargs)
     creationdate = pd.to_datetime(verdata.iloc[0]["CreationDate"], dayfirst=True)
 
     add_date(bez, "Time", format=AGES_TIME_FMT)
@@ -143,9 +138,9 @@ def load_dead(fname: Openable) -> DayData:
     ag["AnzahlTot"] = ag["AnzahlTot"].astype(int)
     bez = bez.set_index(["Datum", "BundeslandID", "GKZ"]).query("BundeslandID != 10")
 
-    sumdead = bez.loc[
-        bez.index.get_level_values("Datum") == bez.index.get_level_values("Datum")[-1]
-    ]["AnzahlTotSum"].sum()
+    sumdead = bez.loc[bez.index.get_level_values("Datum") == bez.index.get_level_values("Datum")[-1]][
+        "AnzahlTotSum"
+    ].sum()
 
     return DayData(creationdate=creationdate, bezdata=bez, agdata=ag, sumdead=sumdead)
 
@@ -153,22 +148,16 @@ def load_dead(fname: Openable) -> DayData:
 def cmp_dead(old: DayData, new: DayData) -> DiffData:
     diff = new.agdata.copy()
     diff.drop(columns="AnzahlTotSum", inplace=True)
-    diff["AnzahlTot"] = (
-        diff["AnzahlTot"].sub(old.agdata["AnzahlTot"], fill_value=0).astype(int)
-    )
+    diff["AnzahlTot"] = diff["AnzahlTot"].sub(old.agdata["AnzahlTot"], fill_value=0).astype(int)
     diff = diff.query("AnzahlTot != 0").copy()
     diffsum = diff["AnzahlTot"].sum()
     logger.debug("diffsum=%s diff=%s", diffsum, diff)
     diff["Bezirk"] = None
     diff.set_index("Bezirk", append=True, inplace=True)
-    assert (
-        diff.index.names == AG_DIFF_IDX_COLS
-    ), f"{diff.index.names=} != {AG_DIFF_IDX_COLS=}"
+    assert diff.index.names == AG_DIFF_IDX_COLS, f"{diff.index.names=} != {AG_DIFF_IDX_COLS=}"
 
     diffdt_bez = new.bezdata.copy()
-    diffdt_bez["AnzahlTot"] = (
-        diffdt_bez["AnzahlTot"].sub(old.bezdata["AnzahlTot"], fill_value=0).astype(int)
-    )
+    diffdt_bez["AnzahlTot"] = diffdt_bez["AnzahlTot"].sub(old.bezdata["AnzahlTot"], fill_value=0).astype(int)
     diffdt_bez = diffdt_bez.query("AnzahlTot != 0")
     logger.debug("diffdt_bez=%s", diffdt_bez)
     bezopen = diffdt_bez.copy()
@@ -189,9 +178,7 @@ def cmp_dead(old: DayData, new: DayData) -> DiffData:
             or len(bezmatch) == 1
         ):
             diff.drop(row[0], inplace=True)
-            for bezkeytail, loc, anzTot in bezmatch[
-                ["Bezirk", "AnzahlTot"]
-            ].itertuples():
+            for bezkeytail, loc, anzTot in bezmatch[["Bezirk", "AnzahlTot"]].itertuples():
                 key = row.Index[:-1] + (loc,)
                 if len(bezmatch) != 1:
                     row = row._replace(AnzahlTot=anzTot)
@@ -199,16 +186,13 @@ def cmp_dead(old: DayData, new: DayData) -> DiffData:
                 bezopen.loc[bezkey + (bezkeytail,), "AnzahlTot"] -= row.AnzahlTot
         else:
             sum_ag_open += row.AnzahlTot
-    diff.index.set_names(
-        origdiff.index.names, inplace=True
-    )  # Workaround Pandas v2.0 bug
+    diff.index.set_names(origdiff.index.names, inplace=True)  # Workaround Pandas v2.0 bug
     left_open = bezopen["AnzahlTot"] != 0
     if left_open.any():
         sum_open = bezopen["AnzahlTot"].sum()
         logger.log(
             logging.INFO if sum_ag_open == sum_open else logging.WARN,
-            "%d Bezirk-entries with %d deaths were not used/overused"
-            " with %d deaths from age data not matched",
+            "%d Bezirk-entries with %d deaths were not used/overused" " with %d deaths from age data not matched",
             left_open.sum(),
             sum_open,
             sum_ag_open,
@@ -286,9 +270,7 @@ def split_multisum_entries(diffentries: pd.DataFrame) -> pd.DataFrame:
     diffentries.set_index("id", append=True, inplace=True)
     diffentries.sort_index(inplace=True)  # Sort after making index unique
     assert len(diffentries) >= len(orig)
-    assert (
-        origsum == diffentries["AnzahlTot"].sum()
-    ), f"{origsum} != {diffentries['AnzahlTot'].sum()}"
+    assert origsum == diffentries["AnzahlTot"].sum(), f"{origsum} != {diffentries['AnzahlTot'].sum()}"
     return diffentries
 
 
@@ -297,9 +279,7 @@ class SummarySplit(NamedTuple):
     summarydiff: pd.DataFrame
 
 
-def split_summary(
-    diff: pd.DataFrame, summarizeuntil: pd.Timestamp, *, keep_single_entry=True
-) -> SummarySplit:
+def split_summary(diff: pd.DataFrame, summarizeuntil: pd.Timestamp, *, keep_single_entry=True) -> SummarySplit:
     dts = diff.index.to_frame()["Datum"]
     summarized_sel = dts <= summarizeuntil
     summary = diff.loc[summarized_sel].reset_index("Datum").copy()
@@ -331,15 +311,10 @@ def split_summary(
     # summary.columns = summary.columns.droplevel(1)
     if keep_single_entry:
         unsummarize_sel = summary["AnzahlTot"].isin([-1, 1])
-        result = SummarySplit(
-            diff.loc[~summarized_sel | unsummarize_sel], summary[~unsummarize_sel]
-        )
+        result = SummarySplit(diff.loc[~summarized_sel | unsummarize_sel], summary[~unsummarize_sel])
     else:
         result = SummarySplit(diff.loc[~summarized_sel], summary)
-    assert (
-        result.diff["AnzahlTot"].sum() + result.summarydiff["AnzahlTot"].sum()
-        == diff["AnzahlTot"].sum()
-    )
+    assert result.diff["AnzahlTot"].sum() + result.summarydiff["AnzahlTot"].sum() == diff["AnzahlTot"].sum()
     return result
 
 
@@ -353,15 +328,11 @@ def format_summary_rows(summary: pd.DataFrame, tod: pd.Timestamp) -> list[str]:
     ]
 
 
-CURRENT_PERIOD_NDAYS = (
-    110  # Before this, we try to avoid e.g. any corrections spilling over
-)
+CURRENT_PERIOD_NDAYS = 110  # Before this, we try to avoid e.g. any corrections spilling over
 RECENT_NDAYS = 21  # In the last N days, we want to see all details.
 
 
-def without_zerosum_corr(
-    diffentries: pd.DataFrame, mincorrdate: pd.Timestamp
-) -> tuple[pd.DataFrame, CorrInfo]:
+def without_zerosum_corr(diffentries: pd.DataFrame, mincorrdate: pd.Timestamp) -> tuple[pd.DataFrame, CorrInfo]:
     # For all zero-csums, drop the entries of the same age group before that
 
     diffentries = split_multisum_entries(diffentries)  # diffentries.copy() #
@@ -371,9 +342,7 @@ def without_zerosum_corr(
     orig_idx_names = diffentries.index.names
 
     deluntil = (
-        diffentries.loc[
-            (csum == 0) & (diffentries.index.get_level_values("Datum") <= mincorrdate)
-        ]
+        diffentries.loc[(csum == 0) & (diffentries.index.get_level_values("Datum") <= mincorrdate)]
         .reset_index()
         .groupby("AltersgruppeID")
         .last()
@@ -388,8 +357,7 @@ def without_zerosum_corr(
     for idx in deluntil:
         dropped = diffentries.loc[:idx]
         dropped = dropped.loc[
-            dropped.index.get_level_values("AltersgruppeID")
-            == idx[deluntil.names.index("AltersgruppeID")]
+            dropped.index.get_level_values("AltersgruppeID") == idx[deluntil.names.index("AltersgruppeID")]
         ]
         n_corr += len(dropped)
         droppedmindate = dropped.index[0][0]
@@ -397,17 +365,11 @@ def without_zerosum_corr(
         maxdate = max(maxdate, dropped.index[-1][0])
         diffentries.drop(index=dropped.index, inplace=True)
 
-    assert (
-        origsum == diffentries["AnzahlTot"].sum()
-    ), f"{origsum} != {diffentries['AnzahlTot'].sum()} (1)"
+    assert origsum == diffentries["AnzahlTot"].sum(), f"{origsum} != {diffentries['AnzahlTot'].sum()} (1)"
     # Regroup split entries
-    agg = {k: "first" for k in diffentries.columns if k != "AnzahlTot"} | {
-        "AnzahlTot": np.sum
-    }
+    agg = {k: "first" for k in diffentries.columns if k != "AnzahlTot"} | {"AnzahlTot": np.sum}
     diffentries = diffentries.groupby(level=AG_DIFF_IDX_COLS, dropna=False).agg(agg)
-    assert (
-        origsum == diffentries["AnzahlTot"].sum()
-    ), f"{origsum} != {diffentries['AnzahlTot'].sum()} (2)"
+    assert origsum == diffentries["AnzahlTot"].sum(), f"{origsum} != {diffentries['AnzahlTot'].sum()} (2)"
     return (diffentries, CorrInfo(n_corr=n_corr, mindate=mindate, maxdate=maxdate))
 
 
@@ -417,34 +379,20 @@ def format_dead(diff: DiffData) -> str:
     tod = diff.new.creationdate
     diffentries = diff.diff.query("BundeslandID != 10").copy()
     hasbezirk = ~pd.isna(diffentries.index.get_level_values("Bezirk"))
-    diffentries.loc[hasbezirk, "loc"] = diffentries.index.get_level_values("Bezirk")[
-        hasbezirk
-    ]
-    diffentries.loc[hasbezirk, "loc"] = diffentries.loc[hasbezirk, "loc"].map(
-        lambda xs: shorten_bezname(xs, soft=True)
-    )
-    diffentries.loc[~hasbezirk, "loc"] = diffentries.loc[~hasbezirk, "Bundesland"].map(
-        SHORTNAME2_BY_BUNDESLAND
-    )
-    diffentries.loc[~hasbezirk, "loc"] = diffentries.loc[
-        ~hasbezirk, "loc"
-    ].str.removesuffix(".")
+    diffentries.loc[hasbezirk, "loc"] = diffentries.index.get_level_values("Bezirk")[hasbezirk]
+    diffentries.loc[hasbezirk, "loc"] = diffentries.loc[hasbezirk, "loc"].map(lambda xs: shorten_bezname(xs, soft=True))
+    diffentries.loc[~hasbezirk, "loc"] = diffentries.loc[~hasbezirk, "Bundesland"].map(SHORTNAME2_BY_BUNDESLAND)
+    diffentries.loc[~hasbezirk, "loc"] = diffentries.loc[~hasbezirk, "loc"].str.removesuffix(".")
 
-    diffentries, corrinfo = without_zerosum_corr(
-        diffentries, tod - timedelta(RECENT_NDAYS + 7)
-    )
+    diffentries, corrinfo = without_zerosum_corr(diffentries, tod - timedelta(RECENT_NDAYS + 7))
     logger.debug("cleaned diffentries:\n%s", diffentries)
 
     result = []
 
     if len(diffentries) > 5:
-        diffentries, summary = split_summary(
-            diffentries, tod - timedelta(CURRENT_PERIOD_NDAYS)
-        )
+        diffentries, summary = split_summary(diffentries, tod - timedelta(CURRENT_PERIOD_NDAYS))
         result += format_summary_rows(summary, tod)
-        diffentries, corrinfo2 = without_zerosum_corr(
-            diffentries, tod - timedelta(RECENT_NDAYS + 7)
-        )
+        diffentries, corrinfo2 = without_zerosum_corr(diffentries, tod - timedelta(RECENT_NDAYS + 7))
         corrinfo = CorrInfo.merge(corrinfo, corrinfo2)
 
     def fmt_row(row):
@@ -475,10 +423,7 @@ def format_dead(diff: DiffData) -> str:
     if corrinfo.n_corr != 0:
         if result:
             result.append("Weiters ")
-        result.append(
-            f"{corrinfo.n_corr} Ummeldungen, "
-            f"{fmt_dt_range(corrinfo.mindate, corrinfo.maxdate, tod)}\n"
-        )
+        result.append(f"{corrinfo.n_corr} Ummeldungen, " f"{fmt_dt_range(corrinfo.mindate, corrinfo.maxdate, tod)}\n")
 
     return "".join(result)
 
@@ -515,9 +460,7 @@ MAX_TWEET_LEN = 278  # Two chars space for errors
 
 def format_dead_tweets(diff: DiffData, silent_intraday: bool = False) -> list[str]:
     rows_raw = format_dead(diff)
-    datestamp = diff.new.creationdate.strftime(
-        "%a %d.%m.%Y" + (" %H:%M" if diff.is_intraday else "")
-    )
+    datestamp = diff.new.creationdate.strftime("%a %d.%m.%Y" + (" %H:%M" if diff.is_intraday else ""))
     allsum = diff.new.sumdead
     allsum_s = format(allsum, ",").replace(",", ".")
     epilog = f"{allsum_s} COVID-Tote wurden bisher in Österreich gezählt."
@@ -569,11 +512,7 @@ def format_dead_tweets(diff: DiffData, silent_intraday: bool = False) -> list[st
     for content in tweet_contents:
 
         def mktweet():
-            return (
-                header
-                + "\n".join(content)
-                + f"\n{len(tweets) + 1}/{len(tweet_contents)}"
-            )
+            return header + "\n".join(content) + f"\n{len(tweets) + 1}/{len(tweet_contents)}"
 
         tweet = mktweet()
         if content is tweet_contents[-1]:
@@ -631,10 +570,7 @@ def format_weekstat_tweets(weekdiff: DiffData) -> list[str]:
     oldsum = oldsummary["AnzahlTot"].sum()
     logger.debug("weekstat: diffentries scrubbed from %s old:\n%s", oldsum, diffentries)
     if oldsum != 0:
-        oldnote = (
-            f"({oldsum:+.0f} bis "
-            f"{reldate(oldsummary['maxdate'].max(), weekdiff.new.creationdate)})\n"
-        )
+        oldnote = f"({oldsum:+.0f} bis " f"{reldate(oldsummary['maxdate'].max(), weekdiff.new.creationdate)})\n"
         if oldsum < 0 or (oldsum > 0 and tlen(oldnote) < oldsum * 2):
             header += oldnote
         else:
@@ -642,18 +578,14 @@ def format_weekstat_tweets(weekdiff: DiffData) -> list[str]:
             # date, but the note about it would be longer than just displaying
             # the emojis, so just pretend they fall after our cutoff.
             diffentries = fulldiffentries
-    diffentries, _ = without_zerosum_corr(
-        diffentries, mincorrdate=weekdiff.new.creationdate
-    )
+    diffentries, _ = without_zerosum_corr(diffentries, mincorrdate=weekdiff.new.creationdate)
     logger.debug("weekstat: diffentries with zerosum_corr:\n%s", diffentries)
     neg_sel = diffentries["AnzahlTot"] < 0
     if neg_sel.any():
         negsum = diffentries.loc[neg_sel]["AnzahlTot"].sum()
         fromdate = diffentries[neg_sel].index.get_level_values("Datum").min()
         assert negsum < 0
-        header += (
-            f"({negsum:+.0f} seit {reldate(fromdate, weekdiff.new.creationdate)})\n"
-        )
+        header += f"({negsum:+.0f} seit {reldate(fromdate, weekdiff.new.creationdate)})\n"
         diffentries = diffentries.loc[~neg_sel]
 
     # Keep this in a list[str], because emojis count as only 1 in tweets
@@ -669,10 +601,7 @@ def format_weekstat_tweets(weekdiff: DiffData) -> list[str]:
         raise ValueError(f"Week summary too large: {tweetcnt=}")
     tweets = [header + "".join(content[:firstcnt]) + f"1/{tweetcnt}"]
     for i, chunkstart in enumerate(range(firstcnt, len(content), per_chunk_cnt), 2):
-        tweets.append(
-            "".join(content[chunkstart : chunkstart + per_chunk_cnt])
-            + f"{i}/{tweetcnt}"
-        )
+        tweets.append("".join(content[chunkstart : chunkstart + per_chunk_cnt]) + f"{i}/{tweetcnt}")
     assert len(tweets) == tweetcnt, f"{len(tweets)=} == {tweetcnt=})"
     return tweets
 
@@ -763,9 +692,7 @@ class ProdBotStateIo(BotStateIo):
 
     def write_botstate(self, state: BotState, only_create=False) -> None:
         statedata = dataclasses.asdict(state)
-        with open(
-            self._STATEFILENAME, "x" if only_create else "w", encoding="utf-8"
-        ) as statef:
+        with open(self._STATEFILENAME, "x" if only_create else "w", encoding="utf-8") as statef:
             json.dump(statedata, statef, indent=2)
 
     def get_twitter_client(self) -> Client:
@@ -824,9 +751,7 @@ def run_bot(botio: BotStateIo, newfile: Openable) -> None:
             except:  # noqa
                 # Error occured during tweet (even KeyboardInterrupt) =>
                 # Stop tweeting until manual intervention
-                botio.write_botstate(
-                    dataclasses.replace(botstate, brokenreplyto=replyto)
-                )
+                botio.write_botstate(dataclasses.replace(botstate, brokenreplyto=replyto))
                 raise
             botstate = dataclasses.replace(botstate, replyto=replyto)
     botio.write_botstate(botstate)

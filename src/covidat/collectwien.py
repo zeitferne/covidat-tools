@@ -90,8 +90,7 @@ def collectwien(dirname, outname):
                         "Datum": mdate,
                         "HotlineCalls": (
                             match_number(HOTLINE_RE, fdata)
-                            if mdate < "2023-04-28"
-                            and mdate not in ("2022-11-02", "2022-11-26", "2023-02-23")
+                            if mdate < "2023-04-28" and mdate not in ("2022-11-02", "2022-11-26", "2023-02-23")
                             else None
                         ),
                         **hospdata,

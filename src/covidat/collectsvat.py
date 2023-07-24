@@ -30,27 +30,22 @@ def load_ks(pth):
     month = int(m.group(2))
 
     ks = pd.read_excel(
-        pth, sheet_name="Tab16", skiprows=9, header=None, names=KS_COLNAMES,
+        pth,
+        sheet_name="Tab16",
+        skiprows=9,
+        header=None,
+        names=KS_COLNAMES,
     )
 
     ks.dropna(thresh=3, inplace=True)
     if pd.isna(ks["insurer"].iloc[0]):
         raise ValueError("Missing insurer")
-    ks["date"] = (ks["id"] % 2).map(
-        lambda odd: pd.Period(year=year if odd else year - 1, month=month, freq="M")
-    )
+    ks["date"] = (ks["id"] % 2).map(lambda odd: pd.Period(year=year if odd else year - 1, month=month, freq="M"))
     return ks
 
 
 def collect_ks():
-    ks = pd.concat(
-        [
-            load_ks(pth)
-            for pth in (util.DATAROOT / SVDIRNAME).glob(
-                "Mb_????.xls*"
-            )
-        ]
-    )
+    ks = pd.concat([load_ks(pth) for pth in (util.DATAROOT / SVDIRNAME).glob("Mb_????.xls*")])
     ks["insurer"].replace(
         "I n s g e s a m t|insgesamt|ASVG-Krankenkassen",
         "Insgesamt",
@@ -83,9 +78,7 @@ def collect_ks():
         raise ValueError("Mismatch of cases_p1000 at " + ks.loc[mask].to_csv(sep=";"))
     mask = np.round(ks["active_end"] / ks["insured"] * 1000) != ks["active_end_p1000"]
     if mask.any():
-        raise ValueError(
-            "Mismatch of active_end_p1000 at " + ks.loc[mask].to_csv(sep=";")
-        )
+        raise ValueError("Mismatch of active_end_p1000 at " + ks.loc[mask].to_csv(sep=";"))
     ks.drop(columns=["id", "cases_p1000", "active_end_p1000"], inplace=True)
     for c in KS_BASECOLS:
         if c in ("cases_p1000", "active_end_p1000"):
@@ -102,11 +95,13 @@ def collect_ks():
     ks.set_index(["date", "insurer", "employment"], inplace=True, verify_integrity=True)
     return ks.sort_index()
 
+
 def main():
     outdir = util.COLLECTROOT / SVDIRNAME
     data = collect_ks()
     outdir.mkdir(parents=True, exist_ok=True)
     data.to_csv(outdir / "ks_all.csv", sep=";", encoding="utf-8")
+
 
 if __name__ == '__main__':
     main()

@@ -18,8 +18,12 @@ import glob
 from . import dlutil
 from . import util
 
-CERT_DATA_URL_FMT = "https://info.gesundheitsministerium.gv.at/data/archiv/COVID19_vaccination_municipalities_%Y%m%d.csv"
-CERT_DATA_AG_URL_FMT = "https://info.gesundheitsministerium.at/data/archiv/COVID19_vaccination_doses_agegroups_%Y%m%d.csv"
+CERT_DATA_URL_FMT = (
+    "https://info.gesundheitsministerium.gv.at/data/archiv/COVID19_vaccination_municipalities_%Y%m%d.csv"
+)
+CERT_DATA_AG_URL_FMT = (
+    "https://info.gesundheitsministerium.at/data/archiv/COVID19_vaccination_doses_agegroups_%Y%m%d.csv"
+)
 CERT_FIRST = datetime(2021, 10, 29, 23, 59, 59)
 
 
@@ -58,11 +62,7 @@ def append_dl_file(url_fmt, fname, fromdate, glob_fmt=None):
     data = []
 
     def add_data_file(resp):
-        data.append(
-            (
-                resp.read().decode("utf-8").replace("\r", "").removesuffix("\n") + "\n"
-            ).splitlines(True)
-        )
+        data.append((resp.read().decode("utf-8").replace("\r", "").removesuffix("\n") + "\n").splitlines(True))
 
     missing = 0
     conn = HTTPSConnection(urlsplit(datetime.today().strftime(url_fmt)).netloc)
@@ -71,15 +71,11 @@ def append_dl_file(url_fmt, fname, fromdate, glob_fmt=None):
             print(dt, flush=True)
             try:
                 url = urlsplit(dt.strftime(url_fmt))
-                conn.request(
-                    "GET", url.path + url.query, headers={"From": dlutil.FROM_EMAIL}
-                )
+                conn.request("GET", url.path + url.query, headers={"From": dlutil.FROM_EMAIL})
                 with conn.getresponse() as resp:
                     if resp.status != 200:
                         resp.read()
-                        raise HTTPError(
-                            url.geturl(), resp.status, resp.reason, resp.headers, None
-                        )
+                        raise HTTPError(url.geturl(), resp.status, resp.reason, resp.headers, None)
                     if resp.headers["Content-Type"] != "text/csv":
                         # If you request a nonexistent page, you don't get a 404
                         # but a redirect to an HTML page.
@@ -89,9 +85,7 @@ def append_dl_file(url_fmt, fname, fromdate, glob_fmt=None):
             except HTTPError as e:
                 print(dt, e, file=sys.stderr, flush=True)
 
-                if (dt + timedelta(1)).astimezone(
-                    None
-                ).date() >= date.today() or missing > 10:
+                if (dt + timedelta(1)).astimezone(None).date() >= date.today() or missing > 10:
                     break
                 if glob_fmt:
                     pat = dt.strftime(glob_fmt)

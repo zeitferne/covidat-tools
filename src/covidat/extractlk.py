@@ -163,9 +163,7 @@ UHR_RE = re.compile(r"(\s+\d+) Uhr")
 
 
 def parsets(tsstr: str, fname: str):
-    ts = dateparser.parse(
-        UHR_RE.sub(r"\1:00 Uhr", html.unescape(tsstr)), languages=["de"]
-    )
+    ts = dateparser.parse(UHR_RE.sub(r"\1:00 Uhr", html.unescape(tsstr)), languages=["de"])
     if not ts:
         raise ValueError(f"Bad date for {fname}: {html.unescape(tsstr)}")
     return ts
@@ -217,9 +215,7 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
         #    html.unescape(mts.group(1)),
         #    ts,
         # )
-        rtext = HWS_RE.sub(" ", BeautifulSoup(text, "html.parser").get_text()).replace(
-            "\r", "\n"
-        )
+        rtext = HWS_RE.sub(" ", BeautifulSoup(text, "html.parser").get_text()).replace("\r", "\n")
         row = {"Datum": ts, "id": fname.name}
         # with open(fname.stem + ".txt", "w", encoding="utf-8", newline="") as oof:
         #    oof.write(rtext)
@@ -244,9 +240,7 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
                 try:
                     chvals = [toint(chval) for chval in chvals]
                 except KeyError as k:
-                    raise ValueError(
-                        f"Failed parsing int '{k.args[0]}' in {fname}: {mch.group(0)}"
-                    ) from None
+                    raise ValueError(f"Failed parsing int '{k.args[0]}' in {fname}: {mch.group(0)}") from None
                 if all(v is None for v in chvals):
                     raise ValueError(f"No result in {fname}: {mch.group(0)}")
                 chvals[1] = chvals[1] or 0
@@ -256,18 +250,13 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
                 if not any(chvals):
                     chvals[0] = 0
                 if chvals[0] == 0 and (chvals[1] or chvals[2]):
-                    raise ValueError(
-                        f"Impossible result (a) {chvals} in {fname}: {mch.group(0)}"
-                    )
+                    raise ValueError(f"Impossible result (a) {chvals} in {fname}: {mch.group(0)}")
                 if (
                     chvals[0] is not None
                     and chvals[0] > (chvals[1] or 0) + (chvals[2] or 0)
-                    and fname.name
-                    not in ("235127.htm", "235261.htm", "284917.htm", "284992.htm")
+                    and fname.name not in ("235127.htm", "235261.htm", "284917.htm", "284992.htm")
                 ):
-                    raise ValueError(
-                        f"Impossible result (b) {chvals} in {fname}: {mch.group(0)}"
-                    )
+                    raise ValueError(f"Impossible result (b) {chvals} in {fname}: {mch.group(0)}")
             else:
                 chvals = (None,) * 3
         row.update(
@@ -286,9 +275,7 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
 COND_INNER_PAT = r"(?:(?:mit|ohne|keine)(?: schweren?)? Vorerkrankung(?:en)?|Vorerkrankung(?:en)? unbekannt|Vorerkrankung(?:en)? (?:(?:zum Zeitpunkt der Meldung )?noch )?nicht bekannt)"
 COND_PAT = rf"(?: (?P<cond>{COND_INNER_PAT})\b\.?,?\s*)"
 COND_INNER_RE = re.compile(COND_INNER_PAT, re.IGNORECASE)
-BEZ_PREFIX_PAT = (
-    r"(?:wohnhaft (?:in |im Bezirk,? )|aus dem Bezirk |aus (?:der Stadt )?|Bezirk )"
-)
+BEZ_PREFIX_PAT = r"(?:wohnhaft (?:in |im Bezirk,? )|aus dem Bezirk |aus (?:der Stadt )?|Bezirk )"
 BEZ_PREFIX_RE = re.compile(BEZ_PREFIX_PAT, re.IGNORECASE)
 AGE_PAT = r"(?P<age>\d+)[-. ]+(?:jähr?i?g?e?r?e?|jähirger|jährigeer)"
 DEAD_RES = tuple(
@@ -320,9 +307,7 @@ DEL_RE = re.compile(
 # print(DEAD_RE_4.pattern)
 
 # print(DEAD_RES[-1].pattern)
-DEATH_START_RE = re.compile(
-    "Aktuelle Tode|Todesfälle im Zusammenhang mit C", re.IGNORECASE
-)
+DEATH_START_RE = re.compile("Aktuelle Tode|Todesfälle im Zusammenhang mit C", re.IGNORECASE)
 
 
 def extractdeaths(ts: date, name: str, rtext: str, deathfile):
@@ -408,15 +393,11 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
             if condm:
                 # print(condm)
                 vals[-1] = condm.group(0)
-                vals[0] = BEZ_PREFIX_RE.sub(
-                    "", vals[0][: condm.start(0)] + vals[0][condm.end(0) :]
-                ).strip()
+                vals[0] = BEZ_PREFIX_RE.sub("", vals[0][: condm.start(0)] + vals[0][condm.end(0) :]).strip()
             parm = PAR_TEXT_RE.search(vals[0])
             if parm:
                 vals[1] = parm.group(1)
-                vals[0] = BEZ_PREFIX_RE.sub(
-                    "", vals[0][: parm.start(0)] + vals[0][parm.end(0) :]
-                ).strip()
+                vals[0] = BEZ_PREFIX_RE.sub("", vals[0][: parm.start(0)] + vals[0][parm.end(0) :]).strip()
         items.append([ts, name] + [dt.date() if dt else dt] + vals)
         if hasdate and not dt and m.group("deathdate").strip() != "unbekannt":
             raise ValueError(f"Bad date: '{m.group('deathdate')}' in {name}")
@@ -453,9 +434,7 @@ def runextraction(args):
     # raise
     with (
         open("extractlk.csv", openmode, encoding="utf-8", newline="\n") as ofile_h,
-        open(
-            "extractlk.dead.csv", openmode, encoding="utf-8", newline="\n"
-        ) as deathfile_h,
+        open("extractlk.dead.csv", openmode, encoding="utf-8", newline="\n") as deathfile_h,
     ):
         ofile = csv.DictWriter(
             ofile_h,

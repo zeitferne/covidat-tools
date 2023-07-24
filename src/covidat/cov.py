@@ -344,22 +344,13 @@ def adjust_cmap(plot_data, cmap=None, vmin=None, vmax=None, center=None, robust=
 
     calc_data = plot_data.astype(float)  # Mask support removed
     if vmin is None:
-        if robust:
-            vmin = np.nanpercentile(calc_data, 2)
-        else:
-            vmin = np.nanmin(calc_data)
+        vmin = np.nanpercentile(calc_data, 2) if robust else np.nanmin(calc_data)
     if vmax is None:
-        if robust:
-            vmax = np.nanpercentile(calc_data, 98)
-        else:
-            vmax = np.nanmax(calc_data)
+        vmax = np.nanpercentile(calc_data, 98) if robust else np.nanmax(calc_data)
     # print("range:", (vmin, vmax))
     # Choose default colormaps if not provided
     if cmap is None:
-        if center is None:
-            cmap = sns.color_palette(un_cmap, as_cmap=True)
-        else:
-            cmap = sns.color_palette(div_cmap, as_cmap=True)
+        cmap = sns.color_palette(un_cmap, as_cmap=True) if center is None else sns.color_palette(div_cmap, as_cmap=True)
     elif isinstance(cmap, str):
         cmap = mpl.cm.get_cmap(cmap)
     elif isinstance(cmap, list):
@@ -1422,7 +1413,7 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
         faelle.iloc[-7:][growth_col].max() * 1.02,
     )
     one_year_earlier = latest - np.timedelta64(365, "D")
-    if first < one_year_earlier and False:
+    if False:
         ax.axvline(x=one_year_earlier, linestyle="--", color="k")
         ax.text(one_year_earlier, ymax * 0.99, one_year_earlier.strftime(" %x"), va="top")
     # ax.set_yticks([0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 10])
@@ -1746,10 +1737,7 @@ def plt_cat_dists(
 ):
     ncats = data_cat[catcol].nunique()
     hugemode = ncats > 11
-    if datefrom is None:
-        pltagg = data_agg
-    else:
-        pltagg = data_agg[data_agg["Datum"] >= datefrom]
+    pltagg = data_agg if datefrom is None else data_agg[data_agg["Datum"] >= datefrom]
 
     pltdates = pltagg["Datum"]
 
@@ -2104,7 +2092,7 @@ def plt_cat_dists(
 DS_AGES = "AGES"
 DS_BMG = "BMSGPK"
 DS_STAT = "statistik.at"
-DS_BOTH = ", ".join((DS_AGES, DS_BMG))
+DS_BOTH = f"{DS_AGES}, {DS_BMG}"
 
 
 def stampit(fig: plt.Figure, dsource: str = DS_AGES):

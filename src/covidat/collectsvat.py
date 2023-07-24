@@ -11,9 +11,7 @@ def _ks_colnames(sfx):
 
 
 KS_BASECOLS = ["insured", "cases", "cases_p1000", "active_end", "active_end_p1000"]
-KS_COLNAMES = (
-    ["id", "insurer", *_ks_colnames("-ArbeiterInnen"), *_ks_colnames("-Angestellte")]
-)
+KS_COLNAMES = ["id", "insurer", *_ks_colnames("-ArbeiterInnen"), *_ks_colnames("-Angestellte")]
 KS_FNAME_RE = re.compile(r"Mb_(\d\d)(\d\d)")
 
 SVDIRNAME = "sozialversicherung-monatsberichte"

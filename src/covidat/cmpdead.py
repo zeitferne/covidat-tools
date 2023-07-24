@@ -728,17 +728,7 @@ def run_bot(botio: BotStateIo, newfile: Openable) -> None:
         results = join_tweets(tweets)
 
         botio.dump_result(
-            "".join(
-                (
-                    "\n\n==== ",
-                    prevfile,
-                    " ",
-                    newfile,
-                    "\n\n",
-                    results,
-                    "\n",
-                )
-            )
+            f"\n\n==== {prevfile} {newfile}\n\n{results}\n"
         )
 
         replyto = botstate.replyto

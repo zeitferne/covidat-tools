@@ -81,8 +81,7 @@ def load_azr():
     azr0["Zulassungsnummer"] = azr0["Zulassungsnummer"].str.replace("[-,][^/]+$", "", regex=True, n=1)
     azr["nkey"] = norm_name(azr["Name"])
     azr_m = pd.read_csv(util.DATAROOT / "basg-medicineshortage/ASP-Missing.csv", sep=";")
-    azr = pd.concat([azr, azr0, azr_m]).reset_index(drop=True)
-    return azr
+    return pd.concat([azr, azr0, azr_m]).reset_index(drop=True)
 
 
 def agg_status(s: pd.Series):

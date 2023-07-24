@@ -280,20 +280,21 @@ BEZ_PREFIX_PAT = r"(?:wohnhaft (?:in |im Bezirk,? )|aus dem Bezirk |aus (?:der S
 BEZ_PREFIX_RE = re.compile(BEZ_PREFIX_PAT, re.IGNORECASE)
 AGE_PAT = r"(?P<age>\d+)[-. ]+(?:jähr?i?g?e?r?e?|jähirger|jährigeer)"
 DEAD_RES = tuple(
-    re.compile(p, re.IGNORECASE) for p in [
-            rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]? {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
-            rf"{COND_PAT}?\s*(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))?\s*[(,](?!.*Todesdatum)\s*(?P<deathloc>[^\n)]+)",
-            rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]?"
-            rf" {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
-            rf"{COND_PAT}?\s*"
-            r"(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))(?:\n|$)(?P<deathloc>never){0}",
-            rf"1 (?P<label>[A-Za-z]+){COND_PAT}? \((?P<age>\d+)\), (?P<deathloc>[^\n]+)\s*(?:\n|$)(?P<district>nope)?",
-            rf"1 (?P<label>[A-Za-z]+)\s*[,(]\s*(?P<age>\d+)s*[,)]\s*{BEZ_PREFIX_PAT}(?P<district>[^\n,]+),{COND_PAT}?(?P<deathloc>[^\n]+)\s*(?:\n|$)",
-            rf"Todesfall im (?P<deathloc>[^\n,]+), {BEZ_PREFIX_PAT}(?P<district>[^\n,]+?), {AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT}?",
-            rf"{AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT} {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?)(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
-            rf"{AGE_PAT} (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?){COND_PAT}(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
-            rf"1 (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}(?P<district>[^\n,]+)\s*[,(]\s*(?P<age>\d+)s*[,)]{COND_PAT}?\s*(?P<deathloc>[^\n]+)\s*(?:\n|$)",
-        ]
+    re.compile(p, re.IGNORECASE)
+    for p in [
+        rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]? {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
+        rf"{COND_PAT}?\s*(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))?\s*[(,](?!.*Todesdatum)\s*(?P<deathloc>[^\n)]+)",
+        rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]?"
+        rf" {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
+        rf"{COND_PAT}?\s*"
+        r"(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))(?:\n|$)(?P<deathloc>never){0}",
+        rf"1 (?P<label>[A-Za-z]+){COND_PAT}? \((?P<age>\d+)\), (?P<deathloc>[^\n]+)\s*(?:\n|$)(?P<district>nope)?",
+        rf"1 (?P<label>[A-Za-z]+)\s*[,(]\s*(?P<age>\d+)s*[,)]\s*{BEZ_PREFIX_PAT}(?P<district>[^\n,]+),{COND_PAT}?(?P<deathloc>[^\n]+)\s*(?:\n|$)",
+        rf"Todesfall im (?P<deathloc>[^\n,]+), {BEZ_PREFIX_PAT}(?P<district>[^\n,]+?), {AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT}?",
+        rf"{AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT} {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?)(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
+        rf"{AGE_PAT} (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?){COND_PAT}(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
+        rf"1 (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}(?P<district>[^\n,]+)\s*[,(]\s*(?P<age>\d+)s*[,)]{COND_PAT}?\s*(?P<deathloc>[^\n]+)\s*(?:\n|$)",
+    ]
 )
 
 PAR_TEXT_RE = re.compile(r"\(([^)\n]+)\)")

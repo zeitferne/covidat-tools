@@ -97,10 +97,7 @@ def dl_url(
     try:
         ok, resp, oldheaders = dl_with_header_cache(url, hdrfilepath, dry_run=dry_run)
         olddate_raw = get_moddate(oldheaders) if oldheaders else None
-        if olddate_raw:
-            olddate = olddate_raw.strftime("%Y-%m-%d %H:%M")
-        else:
-            olddate = None
+        olddate = olddate_raw.strftime("%Y-%m-%d %H:%M") if olddate_raw else None
         if not ok:
             status = getattr(resp, "status", "")
             if status == 304 and oldheaders:

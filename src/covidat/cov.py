@@ -1308,8 +1308,8 @@ assert len(set(BEZ_GKZ_GEO_ORDER)) == len(BEZ_GKZ_GEO_ORDER), str(Counter(BEZ_GK
 
 
 def set_logscale(ax, reduced=False, axis="y"):
-    (ax.set_yscale if axis == 'y' else ax.set_xscale)("log", base=2)
-    laxis = ax.yaxis if axis == 'y' else ax.xaxis
+    (ax.set_yscale if axis == "y" else ax.set_xscale)("log", base=2)
+    laxis = ax.yaxis if axis == "y" else ax.xaxis
     laxis.set_major_locator(matplotlib.ticker.LogLocator(base=10, subs=[0.3, 1] if reduced else [0.2, 0.3, 0.5, 1]))
     fmt = matplotlib.ticker.ScalarFormatter(useOffset=False)
     fmt.set_scientific(False)

@@ -31,7 +31,7 @@ def execute_action(args: Namespace):
                     inputfile.readline()
                 shutil.copyfileobj(inputfile, output)
                 inputfile.seek(-1, io.SEEK_CUR)
-                if inputfile.read(1) != b'\n':
+                if inputfile.read(1) != b"\n":
                     output.write(b"\n")
             isfirst = False
 
@@ -41,5 +41,5 @@ def main() -> None:
     execute_action(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

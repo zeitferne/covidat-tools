@@ -15,7 +15,7 @@ from subprocess import check_call
 
 
 def is_venv():
-    return hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+    return hasattr(sys, "real_prefix") or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
         env = os.environ.copy()
         bindir = os.path.abspath(".venv/Scripts" if os.name == "nt" else ".venv/bin")
         env["PATH"] = bindir + os.pathsep + env.get("PATH", "")
-        if os.name == 'nt':
+        if os.name == "nt":
             check_call([".venv/Scripts/python.exe", __file__], env=env)
             return
         else:
@@ -38,5 +38,5 @@ def main():
     check_call([pipbin] + shlex.split("install -U -r") + [os.path.join(os.path.dirname(__file__), "requirements.txt")])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

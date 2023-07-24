@@ -105,5 +105,5 @@ def main():
     data.to_csv(outdir / "ks_all.csv", sep=";", encoding="utf-8")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -3,7 +3,7 @@
 import csv
 import json
 import lzma
-from datetime import datetime
+from datetime import UTC, datetime
 from itertools import zip_longest
 
 from . import util
@@ -22,7 +22,11 @@ def collecthydro(prefixname: str, insubdir: bool = False):
             # print(fname)
             with open(fname, "rb") as f:
                 fdata = json.load(f)
-            fdate = datetime.strptime(fname.stem.removeprefix(prefixname + "_"), util.DL_TSTAMP_FMT).isoformat()
+            fdate = (
+                datetime.strptime(fname.stem.removeprefix(prefixname + "_"), util.DL_TSTAMP_FMT)
+                .replace(tzinfo=UTC)
+                .isoformat()
+            )
             for linedata in fdata["data"]:
                 name = linedata["name"]
                 uww = linedata["uwwcode"]

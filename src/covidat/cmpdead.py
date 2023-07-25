@@ -324,9 +324,7 @@ def split_summary(diff: pd.DataFrame, summarizeuntil: pd.Timestamp, *, keep_sing
 def format_summary_rows(summary: pd.DataFrame, tod: pd.Timestamp) -> list[str]:
     return [
         f"{row.AnzahlTot:+.0f} {fmt_dt_range(row.mindate, row.maxdate, tod)}"
-        + f" {row.Altersgruppe}"
-        + (f" {row.uloc}" if "uloc" in dir(row) and not pd.isna(row.uloc) else "")
-        + "\n"
+        f" {row.Altersgruppe}" + (f" {row.uloc}" if "uloc" in dir(row) and not pd.isna(row.uloc) else "") + "\n"
         for row in summary.itertuples(index=False)
     ]
 
@@ -471,7 +469,8 @@ def format_dead_tweets(diff: DiffData, silent_intraday: bool = False) -> list[st
         if silent_intraday and diff.is_intraday:
             return []
         return [
-            f"Mit Datenstand {datestamp} wurden seit der letzten Meldung keine Änderungen bei #Covid19at-Todesfällen erfasst.\n\n{epilog}"
+            f"Mit Datenstand {datestamp} wurden seit der letzten Meldung"
+            f" keine Änderungen bei #Covid19at-Todesfällen erfasst.\n\n{epilog}"
         ]
     rows = rows_raw.strip().split("\n")
 
@@ -727,9 +726,7 @@ def run_bot(botio: BotStateIo, newfile: Openable) -> None:
     if tweets:
         results = join_tweets(tweets)
 
-        botio.dump_result(
-            f"\n\n==== {prevfile} {newfile}\n\n{results}\n"
-        )
+        botio.dump_result(f"\n\n==== {prevfile} {newfile}\n\n{results}\n")
 
         replyto = botstate.replyto
         if replyto and botstate.brokenreplyto is None:

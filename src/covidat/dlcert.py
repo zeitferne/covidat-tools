@@ -1,4 +1,12 @@
+import glob
 import ssl
+import sys
+from datetime import datetime, timedelta
+from http.client import HTTPSConnection
+from urllib.error import HTTPError
+from urllib.parse import urlsplit
+
+from . import dlutil, util
 
 
 def create_ctx(*args, **kwargs):
@@ -9,22 +17,13 @@ def create_ctx(*args, **kwargs):
 
 ssl._create_default_https_context = create_ctx
 
-import glob
-import sys
-from datetime import date, datetime, timedelta
-from http.client import HTTPSConnection
-from urllib.error import HTTPError
-from urllib.parse import urlsplit
-
-from . import dlutil, util
-
 CERT_DATA_URL_FMT = (
     "https://info.gesundheitsministerium.gv.at/data/archiv/COVID19_vaccination_municipalities_%Y%m%d.csv"
 )
 CERT_DATA_AG_URL_FMT = (
     "https://info.gesundheitsministerium.at/data/archiv/COVID19_vaccination_doses_agegroups_%Y%m%d.csv"
 )
-CERT_FIRST = datetime(2021, 10, 29, 23, 59, 59)
+CERT_FIRST = datetime(2021, 10, 29, 23, 59, 59, tzinfo=util.TZ_AT)
 
 
 def readold(fname, fromdate):
@@ -65,7 +64,7 @@ def append_dl_file(url_fmt, fname, fromdate, glob_fmt=None):
         data.append((resp.read().decode("utf-8").replace("\r", "").removesuffix("\n") + "\n").splitlines(True))
 
     missing = 0
-    conn = HTTPSConnection(urlsplit(datetime.today().strftime(url_fmt)).netloc)
+    conn = HTTPSConnection(urlsplit(datetime.now(util.TZ_AT).strftime(url_fmt)).netloc)
     try:
         while True:
             print(dt, flush=True)
@@ -85,7 +84,7 @@ def append_dl_file(url_fmt, fname, fromdate, glob_fmt=None):
             except HTTPError as e:
                 print(dt, e, file=sys.stderr, flush=True)
 
-                if (dt + timedelta(1)).astimezone(None).date() >= date.today() or missing > 10:
+                if (dt + timedelta(1)).date() >= datetime.now(util.TZ_AT).date() or missing > 10:
                     break
                 if glob_fmt:
                     pat = dt.strftime(glob_fmt)

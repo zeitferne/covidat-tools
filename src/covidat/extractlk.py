@@ -5,9 +5,12 @@ import itertools
 import re
 from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import dateparser
 from bs4 import BeautifulSoup
+
+tz_vie = ZoneInfo("Europe/Vienna")
 
 TITLE_RE = re.compile(r"<title>([^<]*)</title>")
 TS_RE = re.compile(r"\(Stand\s+([^)]+)\s*(?:\)|$)")
@@ -26,7 +29,10 @@ TS2_RE = re.compile(r"\(\s*Presseaussendung\s+vom\s+([^)\n<]+)\s*(?:\)<)")
 # )
 
 CARE_HOME_RE_LN = re.compile(
-    r"[^\n]+?(\d+|[a-züö]+?)?\s+(?:Alten- und Pflegeheim(?:en)?\b[^\n]*\bvon Covid[- ]19 betroffen|oberösterreichischen Alten- und Pflegeheim[^\n]* positiv)[^\n]+",
+    r"[^\n]+?(\d+|[a-züö]+?)?\s+"
+    r"(?:Alten- und Pflegeheim(?:en)?\b[^\n]*\bvon Covid[- ]19 betroffen"
+    r"|oberösterreichischen Alten- und Pflegeheim[^\n]* positiv)"
+    r"[^\n]+",
     re.IGNORECASE,
 )
 
@@ -39,7 +45,9 @@ CARE_HOME_NONE_STR = "keine Fälle in den oberösterreichischen Alten- und Pfleg
 
 def _hosp_re(marker):
     return re.compile(
-        rf"(?P<n>\d+) Covid-19-Patient[^\n]+ auf {marker} sind [^\n]*?(?:(?P<n2>[0-9,]+)\s*Personen)?[^\n]*?(?:(?P<r>[0-9,]+)\s*(?:%|Prozent)\s*\)?)?\s*nicht vollständig immunisiert",
+        rf"(?P<n>\d+) Covid-19-Patient[^\n]+ auf {marker} sind "
+        r"[^\n]*?(?:(?P<n2>[0-9,]+)\s*Personen)?[^\n]*?(?:(?P<r>[0-9,]+)\s*(?:%|Prozent)\s*\)?)?"
+        r"\s*nicht vollständig immunisiert",
         re.IGNORECASE,
     )
 
@@ -55,7 +63,8 @@ auf Normal- und Intensivstationen neu aufgenommen.[^\n]*
 (?P<rnst>[0-9,.]+) Prozent der Patientinnen (?:und|bzw\.) Patienten auf Normalstationen sind nicht
 vollständig (?:grund)?immunisiert\.? \(?(?:das|dies) (?:entspricht|sind) (?P<nstunvacc>\d+) Person(?:en)?\)?\.?
 Von den in der vergangenen Kalenderwoche aufgenommenen und intensivmedizinisch
-zu versorgenden Patientinnen (?:und|bzw\.) Patienten sind (?P<ricu>[0-9,.]+ Prozent|alle) (?P<invicu>nicht )?vollständig
+zu versorgenden Patientinnen (?:und|bzw\.) Patienten sind (?P<ricu>[0-9,.]+ Prozent|alle)
+(?P<invicu>nicht )?vollständig
 (?:grund)?immunisiert\.? \(?(?:das|dies) (?:entspricht|sind) (?P<icuunvacc>\d+) Person(?:en)?\)?""".replace(
         "\n", " "
     ),
@@ -272,8 +281,11 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
         ofile.writerow(row)
 
 
-# 91-jährige Patientin, wohnhaft im Bezirk Gmunden, Vorerkrankungen unbekannt, Todesdatum: 30. Oktober (Salzkammergut Klinikum Bad Ischl-Gmunden-Vöcklabruck, Standort Gmunden)
-COND_INNER_PAT = r"(?:(?:mit|ohne|keine)(?: schweren?)? Vorerkrankung(?:en)?|Vorerkrankung(?:en)? unbekannt|Vorerkrankung(?:en)? (?:(?:zum Zeitpunkt der Meldung )?noch )?nicht bekannt)"
+# 91-jährige Patientin, wohnhaft im Bezirk Gmunden, Vorerkrankungen unbekannt, Todesdatum: 30. Oktober
+#   (Salzkammergut Klinikum Bad Ischl-Gmunden-Vöcklabruck, Standort Gmunden)
+COND_INNER_PAT = (
+    r"(?:(?:mit|ohne|keine)(?: schweren?)? Vorerkrankung(?:en)?|Vorerkrankung(?:en)? unbekannt|Vorerkrankung(?:en)?"
+    r" (?:(?:zum Zeitpunkt der Meldung )?noch )?nicht bekannt)")
 COND_PAT = rf"(?: (?P<cond>{COND_INNER_PAT})\b\.?,?\s*)"
 COND_INNER_RE = re.compile(COND_INNER_PAT, re.IGNORECASE)
 BEZ_PREFIX_PAT = r"(?:wohnhaft (?:in |im Bezirk,? )|aus dem Bezirk |aus (?:der Stadt )?|Bezirk )"
@@ -283,24 +295,32 @@ DEAD_RES = tuple(
     re.compile(p, re.IGNORECASE)
     for p in [
         rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]? {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
-        rf"{COND_PAT}?\s*(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))?\s*[(,](?!.*Todesdatum)\s*(?P<deathloc>[^\n)]+)",
+        rf"{COND_PAT}?\s*(?:Todesdatum\b(?:[.,:] ?| )"
+        rf"(?P<deathdate>[^\n(,]+))?\s*[(,](?!.*Todesdatum)\s*(?P<deathloc>[^\n)]+)",
         rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]?"
-        rf" {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
-        rf"{COND_PAT}?\s*"
-        r"(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))(?:\n|$)(?P<deathloc>never){0}",
+            rf" {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
+            rf"{COND_PAT}?\s*"
+            r"(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))(?:\n|$)(?P<deathloc>never){0}",
         rf"1 (?P<label>[A-Za-z]+){COND_PAT}? \((?P<age>\d+)\), (?P<deathloc>[^\n]+)\s*(?:\n|$)(?P<district>nope)?",
-        rf"1 (?P<label>[A-Za-z]+)\s*[,(]\s*(?P<age>\d+)s*[,)]\s*{BEZ_PREFIX_PAT}(?P<district>[^\n,]+),{COND_PAT}?(?P<deathloc>[^\n]+)\s*(?:\n|$)",
-        rf"Todesfall im (?P<deathloc>[^\n,]+), {BEZ_PREFIX_PAT}(?P<district>[^\n,]+?), {AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT}?",
-        rf"{AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT} {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?)(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
-        rf"{AGE_PAT} (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?){COND_PAT}(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
-        rf"1 (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}(?P<district>[^\n,]+)\s*[,(]\s*(?P<age>\d+)s*[,)]{COND_PAT}?\s*(?P<deathloc>[^\n]+)\s*(?:\n|$)",
+        rf"1 (?P<label>[A-Za-z]+)\s*[,(]\s*(?P<age>\d+)s*[,)]\s*"
+            rf"{BEZ_PREFIX_PAT}(?P<district>[^\n,]+),{COND_PAT}?(?P<deathloc>[^\n]+)\s*(?:\n|$)",
+        rf"Todesfall im (?P<deathloc>[^\n,]+), {BEZ_PREFIX_PAT}(?P<district>[^\n,]+?),"
+            rf" {AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT}?",
+        rf"{AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT} {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?)"
+            rf"(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
+        rf"{AGE_PAT} (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?){COND_PAT}"
+            rf"(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
+        rf"1 (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}(?P<district>[^\n,]+)\s*[,(]\s*(?P<age>\d+)s*[,)]{COND_PAT}?"
+            rf"\s*(?P<deathloc>[^\n]+)\s*(?:\n|$)",
     ]
 )
 
 PAR_TEXT_RE = re.compile(r"\(([^)\n]+)\)")
 
 DEL_RE = re.compile(
-    r"\n\s*Nachtrag zur Todesfallmeldung.+\n|\n\s*Von den heute am Dashboard des Landes OÖ \([^)]+\) ausgewiesenen Todesfällen,? war.+bereits.+\n|wegen möglicher Vorerkrankungen zur Risikogruppe",
+    r"\n\s*Nachtrag zur Todesfallmeldung.+\n|"
+    r"\n\s*Von den heute am Dashboard des Landes OÖ \([^)]+\) ausgewiesenen Todesfällen,? war.+bereits.+\n|"
+    r"wegen möglicher Vorerkrankungen zur Risikogruppe",
     re.IGNORECASE,
 )
 # print(DEAD_RE_4.pattern)
@@ -365,14 +385,16 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
         )
         if dt:
             if dt.year > ts.year:
-                dt = datetime(ts.year, dt.month, dt.day)
+                dt = datetime(ts.year, dt.month, dt.day, tzinfo=tz_vie)
             if dt > ts and dt.year == ts.year:
-                dt = datetime(ts.year - 1, dt.month, dt.day)
+                dt = datetime(ts.year - 1, dt.month, dt.day, tzinfo=tz_vie)
             if dt > ts:
                 raise ValueError(f"Future-dated death: {dt} in {m[0]} / {name} {ts}")
         if name == "243890.htm" and "wird noch bekannt gegeben" in m.group(0):
-            # * 95-jähriger Patient wohnhaft im Bezirk Urfahr-Umgebung mit Vorerkrankungen (Klinikum wird noch bekannt gegeben).
-            # Nachtrag zur Todesfallmeldung vom 3. November 2020: der 95-jährige Mann wohnhaft im Bezirk Urfahr-Umgebung verstarb mit Vorerkrankungen im BHS Gramastetten.
+            # * 95-jähriger Patient wohnhaft im Bezirk Urfahr-Umgebung mit Vorerkrankungen
+            #   (Klinikum wird noch bekannt gegeben).
+            # Nachtrag zur Todesfallmeldung vom 3. November 2020: der 95-jährige Mann wohnhaft im
+            #   Bezirk Urfahr-Umgebung verstarb mit Vorerkrankungen im BHS Gramastetten.
             items.append(
                 [
                     ts,

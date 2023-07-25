@@ -161,6 +161,13 @@ ignore = [
 
   "PD002",   # inplace=True is OK
   "PD010",   # pandas-use-of-dot-pivot-or-unstack
+
+  "T20", # print is OK
+  "S101", # assert is OK
+
+  "TID252", # relative imports are OK
+
+  "S603", # subprocess.call w/o shell
 ]
 unfixable = [
   #"F401",   # Don't touch unused imports

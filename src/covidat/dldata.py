@@ -12,12 +12,13 @@ import tomllib
 import typing
 import urllib.response
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from os.path import basename
 from pathlib import Path, PurePath, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 from zipfile import ZipFile
+from zoneinfo import ZoneInfo
 
 from .dlutil import dl_with_header_cache, get_moddate, write_hdr_file
 from .util import DATAROOT, DL_TSTAMP_FMT
@@ -91,7 +92,7 @@ def dl_url(
     fext = fext or default_file_extension
     fstem = fname_format.format(fstem)
     hdrfilepath = dldir / (fstem + "_lasthdr.txt")
-    dlts = datetime.utcnow()
+    dlts = datetime.now(UTC)
     resp = None
     newpath = None
     try:
@@ -199,7 +200,7 @@ def ages_versiondate(resp: urllib.response.addinfourl, data: bytes) -> datetime 
         md = get_moddate(resp.headers)
         logger.error("Failed extract version, using Last-Modified %s date - 2h", md, exc_info=exc)
         return md - timedelta(hours=2) if md is not None else None
-    return datetime.strptime(ver, "%d.%m.%Y %H:%M:%S")
+    return datetime.strptime(ver, "%d.%m.%Y %H:%M:%S").replace(tzinfo=ZoneInfo("Europe/Vienna"))
 
 
 @date_extractor
@@ -208,7 +209,9 @@ def medshort_updatedate(resp: urllib.response.addinfourl, data: bytes) -> dateti
     tmatch = re.search(rb"aktualisiert am: ([0-9-]+ [0-9:]+)", data)
     if not tmatch:
         return None
-    return datetime.strptime(tmatch.group(1).decode("utf-8"), "%Y-%m-%d %H:%M:%S")
+    return datetime.strptime(tmatch.group(1).decode("utf-8"), "%Y-%m-%d %H:%M:%S").replace(
+        tzinfo=ZoneInfo("Europe/Vienna")
+    )
 
 
 def execute_dlset(

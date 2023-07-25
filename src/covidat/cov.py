@@ -7,11 +7,12 @@ import typing
 from collections import Counter
 from collections.abc import Sequence
 from contextlib import contextmanager, nullcontext
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from itertools import count
 from pathlib import Path
 from typing import Any
 from zipfile import ZipFile
+from zoneinfo import ZoneInfo
 
 import matplotlib as mpl
 import matplotlib.axis
@@ -25,7 +26,7 @@ import seaborn as sns
 from cycler import cycler
 from IPython.display import display
 
-from .covdata import *
+from .covdata import AGES_DATE_FMT, AGES_TIME_FMT, SHORTNAME_BY_BUNDESLAND, add_date, norm_df
 from .util import COLLECTROOT
 
 logger = logging.getLogger(__name__)
@@ -265,8 +266,15 @@ def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey=Fals
                 ax.set_ylim(top=max(oldseries.max(), newseries.max()) * 1.05)
             ax.plot(avgseries.iloc[-ndays - 1 :], ls="--", color="lightgrey")
             # lastval = newseries.iloc[-1]
-            # ax.annotate(format(lastval, ".0f"), (newbs[-1].get_x() + newbs[-1].get_width(), lastval * 0.95), color="k", rotation=90,
-            #    fontsize="xx-small", ha="right", va="top", rotation_mode="anchor")
+            # ax.annotate(
+            #   format(lastval, ".0f"),
+            #   (newbs[-1].get_x() + newbs[-1].get_width(), lastval * 0.95),
+            #   color="k",
+            #   rotation=90,
+            #   fontsize="xx-small",
+            #   ha="right",
+            #   va="top",
+            #   rotation_mode="anchor")
 
 
 def plt_mdiff(
@@ -285,7 +293,6 @@ def plt_mdiff(
     fig, axs = plt.subplots(5, 2, figsize=(10, 10), sharex=True, sharey=sharey)
     # display(g.axes)
     # style=dict(lw=0.5, mew=0, marker=".", markersize=5)
-    {"lw": 0.4}
     maxy = 0
     for k, ax in zip(fs[catcol].unique(), axs.flat):
         # print(k)
@@ -605,6 +612,9 @@ def loadall(
     return pd.concat(daydata_list, ignore_index=True)
 
 
+tz_vie = ZoneInfo("Europe/Vienna")
+
+
 def get_day_zip_name(
     daydate: date | None = None,
     pattern: str | typing.Iterable[str] | None = None,
@@ -613,7 +623,7 @@ def get_day_zip_name(
 ) -> Path:
     pattern = pattern or ("*_orig_csv_ages", "*_orig_csv_ages.zip", "*_*_orig_csv.zip")
     try_earlier = True if try_earlier is None and daydate is None else try_earlier
-    today = date.today()
+    today = datetime.now(tz_vie).date()
     try:
         return get_zip_name(daydate or today, pattern)
     except NoDataError:
@@ -742,13 +752,14 @@ def load_eimpf() -> pd.DataFrame:
 
 
 def set_week_labels(fig: plt.Figure, ax: plt.Axes):
-    ax.xaxis.set_major_locator(matplotlib.dates.WeekdayLocator(byweekday=matplotlib.dates.MO, interval=1))
+    ax.xaxis.set_major_locator(
+        matplotlib.dates.WeekdayLocator(byweekday=matplotlib.dates.MO, interval=1))
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("KW%W"))
     fig.autofmt_xdate()
 
 
 @contextmanager
-def calc_shifted(  # TODO: Read https://pandas.pydata.org/docs/user_guide/groupby.html and refactor to use index more if useful
+def calc_shifted(
     ds: pd.DataFrame,
     by: str | list[str],
     periods: int = 1,
@@ -756,6 +767,8 @@ def calc_shifted(  # TODO: Read https://pandas.pydata.org/docs/user_guide/groupb
     newcols: list[str] | None = None,
     fill=np.nan,
 ):
+    # TODO: Read https://pandas.pydata.org/docs/user_guide/groupby.html and refactor to use index more if useful
+
     ds.sort_values(by=[by, "Datum"] if isinstance(by, str) else [*by, "Datum"], inplace=True)
     shifted = ds.shift(periods)
     cols = ds.columns.copy()
@@ -1584,7 +1597,7 @@ def main():
         sns.set_style("whitegrid", {"axes.grid": False, "legend.fontsize": 8})
         df = load_bezirke()
         enrich_inz(df)
-        bez_recent = df[df["Datum"] >= pd.to_datetime(date.today() - timedelta(45))]
+        bez_recent = df[df["Datum"] >= pd.to_datetime(datetime.now(tz_vie).date() - timedelta(45))]
         bez_today = filterlatest(bez_recent)
         top = bez_today.sort_values(by="inz", ascending=False).iloc[:8]["Bezirk"]
         render_bez(bez_recent, top, "Hochinzidenz").savefig("df-top.png")
@@ -1961,9 +1974,9 @@ def plt_cat_dists(
     if False:
         fig = plt.Figure()
         ax = fig.subplots()
-        cov.plt_age_sums_ax(ax, agd_sums_at, shortrange, "AnzahlFaelle")
+        plt_age_sums_ax(ax, data_agg, shortrange, "AnzahlFaelle")
         ax.set_title(f"{bundesland}: Fälle der letzten Tage je {catcol}{stamp}", fontsize=10)
-        cov.ag_def_legend(fig)
+        ag_def_legend(fig)
         display(fig)
 
     def add_casenums(ax: plt.Axes):

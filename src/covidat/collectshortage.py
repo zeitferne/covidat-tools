@@ -40,10 +40,7 @@ def collectshortage(dirname, outname):
             with open(fname, encoding="utf-8") as f:
                 fdata = HWS_RE.sub(" ", html.unescape(f.read()))
             fdate = (
-                datetime.strptime(fname.stem.split("_", 1)[1], "%Y%m%d_%H%M%S")
-                .replace(tzinfo=UTC)
-                .date()
-                .isoformat()
+                datetime.strptime(fname.stem.split("_", 1)[1], "%Y%m%d_%H%M%S").replace(tzinfo=UTC).date().isoformat()
             )
             try:
                 writer.writerow(
@@ -162,11 +159,7 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
 
 
 def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter):
-    fdate = (
-        datetime.strptime(fname.stem.split("_", 1)[1].split(".", 1)[0], "%Y%m%d_%H%M%S")
-        .replace(tzinfo=UTC)
-        .date()
-    )
+    fdate = datetime.strptime(fname.stem.split("_", 1)[1].split(".", 1)[0], "%Y%m%d_%H%M%S").replace(tzinfo=UTC).date()
     if fdate in dts:
         return
     if fname.name.endswith(".xlsx"):

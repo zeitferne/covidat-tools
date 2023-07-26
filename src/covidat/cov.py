@@ -752,8 +752,7 @@ def load_eimpf() -> pd.DataFrame:
 
 
 def set_week_labels(fig: plt.Figure, ax: plt.Axes):
-    ax.xaxis.set_major_locator(
-        matplotlib.dates.WeekdayLocator(byweekday=matplotlib.dates.MO, interval=1))
+    ax.xaxis.set_major_locator(matplotlib.dates.WeekdayLocator(byweekday=matplotlib.dates.MO, interval=1))
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("KW%W"))
     fig.autofmt_xdate()
 

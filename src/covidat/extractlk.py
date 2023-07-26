@@ -285,7 +285,8 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
 #   (Salzkammergut Klinikum Bad Ischl-Gmunden-Vöcklabruck, Standort Gmunden)
 COND_INNER_PAT = (
     r"(?:(?:mit|ohne|keine)(?: schweren?)? Vorerkrankung(?:en)?|Vorerkrankung(?:en)? unbekannt|Vorerkrankung(?:en)?"
-    r" (?:(?:zum Zeitpunkt der Meldung )?noch )?nicht bekannt)")
+    r" (?:(?:zum Zeitpunkt der Meldung )?noch )?nicht bekannt)"
+)
 COND_PAT = rf"(?: (?P<cond>{COND_INNER_PAT})\b\.?,?\s*)"
 COND_INNER_RE = re.compile(COND_INNER_PAT, re.IGNORECASE)
 BEZ_PREFIX_PAT = r"(?:wohnhaft (?:in |im Bezirk,? )|aus dem Bezirk |aus (?:der Stadt )?|Bezirk )"
@@ -298,20 +299,20 @@ DEAD_RES = tuple(
         rf"{COND_PAT}?\s*(?:Todesdatum\b(?:[.,:] ?| )"
         rf"(?P<deathdate>[^\n(,]+))?\s*[(,](?!.*Todesdatum)\s*(?P<deathloc>[^\n)]+)",
         rf"{AGE_PAT} (?P<label>[A-Za-z]+)[,.]?"
-            rf" {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
-            rf"{COND_PAT}?\s*"
-            r"(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))(?:\n|$)(?P<deathloc>never){0}",
+        rf" {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?),?"
+        rf"{COND_PAT}?\s*"
+        r"(?:Todesdatum\b(?:[.,:] ?| )(?P<deathdate>[^\n(,]+))(?:\n|$)(?P<deathloc>never){0}",
         rf"1 (?P<label>[A-Za-z]+){COND_PAT}? \((?P<age>\d+)\), (?P<deathloc>[^\n]+)\s*(?:\n|$)(?P<district>nope)?",
         rf"1 (?P<label>[A-Za-z]+)\s*[,(]\s*(?P<age>\d+)s*[,)]\s*"
-            rf"{BEZ_PREFIX_PAT}(?P<district>[^\n,]+),{COND_PAT}?(?P<deathloc>[^\n]+)\s*(?:\n|$)",
+        rf"{BEZ_PREFIX_PAT}(?P<district>[^\n,]+),{COND_PAT}?(?P<deathloc>[^\n]+)\s*(?:\n|$)",
         rf"Todesfall im (?P<deathloc>[^\n,]+), {BEZ_PREFIX_PAT}(?P<district>[^\n,]+?),"
-            rf" {AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT}?",
+        rf" {AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT}?",
         rf"{AGE_PAT} (?P<label>[A-Za-z]+){COND_PAT} {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?)"
-            rf"(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
+        rf"(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
         rf"{AGE_PAT} (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}?(?P<district>[^\n,]+?){COND_PAT}"
-            rf"(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
+        rf"(?: im (?P<deathloc>[^\n]+))?(?:\n|$)",
         rf"1 (?P<label>[A-Za-z]+) {BEZ_PREFIX_PAT}(?P<district>[^\n,]+)\s*[,(]\s*(?P<age>\d+)s*[,)]{COND_PAT}?"
-            rf"\s*(?P<deathloc>[^\n]+)\s*(?:\n|$)",
+        rf"\s*(?P<deathloc>[^\n]+)\s*(?:\n|$)",
     ]
 )
 

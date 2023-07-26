@@ -14,8 +14,14 @@ def main():
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args()
 
-    pdir = Path(__file__).absolute().parent.parent
-    assert (pdir / ".git").is_dir(), "Expected git dir at " + str(pdir)
+    pdir = Path(__file__).absolute().parent
+    while pdir != pdir.root:
+        pdir = pdir.parent
+        if (pdir / ".git").is_dir():
+            break
+    else:
+        raise ValueError("Repo root not found")
+
     pdir = re.escape(str(pdir.parent).replace("\\", "/"))
     if len(pdir) > 2 and pdir[1] == ":":
         pdir = f"(?:{pdir})|(?:{pdir[2:]})"
@@ -24,10 +30,10 @@ def main():
     pdir = pdir.replace("/", r"[/\\]")
     pdir_pat = re.compile(pdir.encode("utf-8"), re.IGNORECASE)
 
-    output_dir = "gh-pages/export"
-    if os.path.exists(output_dir):
+    output_dir = Path("gh-pages/export")
+    if output_dir.exists():
         rmtree(output_dir)
-    os.mkdir(output_dir)
+    output_dir.mkdir()
 
     for nbfile in Path(".").glob("*.ipynb"):
         no_input = b"#@export: --no-input" in nbfile.read_bytes()[:16_000]
@@ -37,7 +43,7 @@ def main():
             "nbconvert",
             "--to=html",
             "--ExtractOutputPreprocessor.enabled=true",
-            "--output-dir=" + output_dir,
+            f"--output-dir={output_dir}",
             str(nbfile),
         ]
         if no_input:

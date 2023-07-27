@@ -30,6 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 notebooks = [
+  "odfpy~=1.4.1",
   "colorcet~=3.0.1",
   "matplotlib~=3.7.2",
   "seaborn~=0.12.2",

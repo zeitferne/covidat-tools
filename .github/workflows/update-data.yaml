@@ -33,11 +33,11 @@ jobs:
           ref: "unreviewed-auto-update"
       - name: Fetch new data
         id: fetch-new-data
+        env:
+          COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
         run: |
           echo "date=`date --rfc-email`" | tee "$GITHUB_OUTPUT"
           hatch run dldata -c dldata.toml
-        env:
-          COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
       - name: Upload data
         working-directory: ${{ env.COVAT_DATA_ROOT }}
         run: |

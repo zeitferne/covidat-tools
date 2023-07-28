@@ -21,6 +21,8 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           python -m pip install --upgrade pip
           pip install --upgrade hatch
           hatch -v env create default
@@ -36,8 +38,6 @@ jobs:
         env:
           COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           echo "date=`date --rfc-email`" | tee "$GITHUB_OUTPUT"
           hatch run dldata --loglevel=debug -c dldata.toml
       - name: Upload data

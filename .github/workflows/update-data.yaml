@@ -1,33 +1,48 @@
 name: Update covidat-data
 on:
-    - workflow_dispatch
+  - workflow_dispatch
 permissions:
-    contents: read
+  contents: read
+defaults:
+  run:
+    shell: bash
 jobs:
-    Download-data:
-        runs-on: ubuntu-latest
+  Download-data:
+    runs-on: ubuntu-latest
+    env:
+      COVDATA_REPO_ROOT: covidat-data
+      COVAT_DATA_ROOT: covidat-data/data
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade hatch
+          hatch -v env create default
+      - name: Load old data
+        uses: actions/checkout@v3
+        with:
+          repository: "zeitferne/covidat-data"
+          path: ${{ env.COVDATA_REPO_ROOT }}
+          token: ${{ secrets.COVAT_DATA_GH_TOKEN }}
+          ref: "unreviewed-auto-update"
+      - name: Fetch new data
+        id: fetch-new-data
+        run: |
+          echo "date=`date --rfc-email`" | tee "$GITHUB_OUTPUT"
+          hatch run dldata -c dldata.toml
         env:
-            COVDATA_REPO_ROOT: covidat-data
-            COVAT_DATA_ROOT: covidat-data/data
-        steps:
-        - uses: actions/checkout@v3
-          with:
-            persist-credentials: false
-        - uses: actions/setup-python@v3
-          with:
-            python-version: "3.11"
-        - name: Install dependencies
-          run: |
-            python -m pip install --upgrade pip
-            pip install --upgrade hatch
-            hatch env create default
-        - name: Load old data
-          uses: actions/checkout@v3
-          with:
-            repository: 'zeitferne/covidat-data'
-            path: ${{ env.COVDATA_REPO_ROOT }}
-            #token:
-        - name: Fetch new data
-          run: |
-            hatch run dldata -c dldata.toml
-
+          COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
+      - name: Upload data
+        working-directory: ${{ env.COVAT_DATA_ROOT }}
+        run: |
+          git add -A .
+          if ! git diff-index --quiet HEAD; then
+              git commit -m "Automatic data update ${{steps.fetch-new-data.outputs.date}}"
+              git push
+          fi

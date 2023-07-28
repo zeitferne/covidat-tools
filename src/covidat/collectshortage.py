@@ -144,8 +144,10 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
             "Status": agg_status,
         }
         if not only_statagg:
+
             def to_dt(s):
                 return pd.to_datetime(s, format="%Y-%m-%d")
+
             veasp.loc[veasp["Status"] == "verfügbar", "Datum_voraussichtliche_Wiederbelieferung"] = pd.NA
             agg |= {
                 "Grund": lambda g: " / ".join(g.unique()),
@@ -155,7 +157,7 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
                 "Datum_Meldung": lambda s: to_dt(s).min(),
                 "Datum_letzte_Aenderung": lambda s: to_dt(s).max(),
                 "Beginn_Vertriebseinschraenkung": lambda s: to_dt(s).min(),
-                "Datum_voraussichtliche_Wiederbelieferung":  lambda s: to_dt(s).min(),
+                "Datum_voraussichtliche_Wiederbelieferung": lambda s: to_dt(s).min(),
             }
         return (veasp.groupby(["Zulassungsnummer", "Verwendung"]).agg(agg)).reset_index()
     except StopIteration:

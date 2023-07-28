@@ -4,9 +4,13 @@
 > aktualisiert und sind hier abrufbar:
 >
 > * [monitoring](https://zeitferne.github.io/covidat-tools/export/monitoring.html):
->   SARS-CoV-2-Abwassermonitoring, Krankenstände, Medikamentenmangel. Wird (un)regelmäßig aktualisiert.
+>   SARS-CoV-2-Abwassermonitoring, Krankenstände, Sterbefälle, Medikamentenmangel.
+>   Wird (un)regelmäßig aktualisiert.
 > * [covidat-old](https://zeitferne.github.io/covidat-tools/export/covidat-old.html):
 >   Auswertungen zu COVID-19 aus den eingestellten EMS-Daten. Keine weiteren Aktualisierungen zu erwarten.
+> * [Sterbetafeln](https://zeitferne.github.io/covidat-tools/export/Sterbetafeln.html):
+>   Darstellungen von Lebenserwartungen & Veränderungen im Zeitverlauf.
+>   Nur jährliche Aktualisierung der zugrundeliegenden Daten.
 >
 > Es ist auch der Code enthalten -- einfach Scrollen bis man zu den bunten
 > Bildern kommt. Obwohl zugebenermaßen nicht alle ohne weiteren Kontext

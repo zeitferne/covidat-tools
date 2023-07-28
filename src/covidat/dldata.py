@@ -3,7 +3,6 @@
 import argparse
 import csv
 import io
-import locale
 import logging
 import lzma
 import mimetypes
@@ -283,7 +282,6 @@ def execute_config(
 
 
 def main() -> None:
-    locale.setlocale(locale.LC_ALL, "de_AT.UTF-8")
     parser = argparse.ArgumentParser()
     parser.add_argument("--logfile")
     parser.add_argument("--loglevel")

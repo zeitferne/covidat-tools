@@ -99,6 +99,6 @@ def dl_with_header_cache(
 ) -> tuple[bool, HTTPError | urllib.response.addinfourl, HTTPMessage | None]:
     hdrs = _read_header_file(hdrfilepath)
     if not hdrs:
-        logger.info("Could not read headers at %s (URL: %s)", hdrfilepath, url)
+        logger.info("No headers cached at %s (URL: %s)", hdrfilepath, url)
     modified, resp = dl_if_not_modified(url, hdrs, dry_run=dry_run)
     return modified, resp, hdrs

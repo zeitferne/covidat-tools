@@ -128,13 +128,23 @@ def dl_url(
         def commit_headers():
             write_hdr_file(resp.headers, hdrfilepath)
 
+        def is_header_updated(name):
+            oldval = None if oldheaders is None else oldheaders.get(name)
+            return resp.headers.get(name) != oldval
+
+        def maybe_commit_headers():
+            if is_header_updated("Etag") or is_header_updated("Last-Modified"):
+                commit_headers()
+            else:
+                logger.debug("Headers contain no relevant change, not storing them.")
+
         def simpname(fpath: Path):
             return olddate or splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
 
         newpath, fext = fpath_from_resp(resp) if archive else (dldir / fname, fext)
         if archive and newpath.exists():
             logger.info("Same modification date: %s (Kept: %s)", simpname(newpath))
-            commit_headers()
+            maybe_commit_headers()
             return None
 
         newdir = newpath.parent
@@ -159,7 +169,7 @@ def dl_url(
                     simpname(linkpath.readlink()),
                 )
                 dlpath.unlink()
-                commit_headers()  # Update headers (might contain etag/last-modified)
+                maybe_commit_headers()
                 return None
             if newpath.exists():
                 raise FileExistsError("Target exists but has different content:" + str(newpath))

@@ -36,8 +36,10 @@ jobs:
         env:
           COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           echo "date=`date --rfc-email`" | tee "$GITHUB_OUTPUT"
-          hatch run dldata -c dldata.toml
+          hatch run dldata --loglevel=debug -c dldata.toml
       - name: Upload data
         working-directory: ${{ env.COVAT_DATA_ROOT }}
         run: |

@@ -12,6 +12,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--sync-to-s3")
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--notebook")
     args = parser.parse_args()
 
     pdir = Path(__file__).absolute().parent
@@ -35,7 +36,9 @@ def main():
         rmtree(output_dir)
     output_dir.mkdir()
 
-    for nbfile in Path(".").glob("*.ipynb"):
+    nbfiles = (args.notebook,) if args.notebook else Path(".").glob("*.ipynb")
+
+    for nbfile in nbfiles:
         no_input = b"#@export: --no-input" in nbfile.read_bytes()[:16_000]
 
         exportargs = [

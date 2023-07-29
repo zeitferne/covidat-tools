@@ -2,7 +2,7 @@ name: Update covidat-data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "24 16,5 * * *"
+    - cron: "24 15,5 * * *"
 permissions:
   contents: read
 defaults:
@@ -10,18 +10,17 @@ defaults:
     shell: bash
 jobs:
   Download-data:
+    concurrency: update-data
     runs-on: ubuntu-latest
     env:
       COVDATA_REPO_ROOT: covidat-data
       COVAT_DATA_ROOT: covidat-data/data
     steps:
       - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
       - uses: actions/setup-python@v3
         with:
           python-version: "3.11"
-      - name: Install dependencies
+      - name: Setup
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -35,18 +34,64 @@ jobs:
           path: ${{ env.COVDATA_REPO_ROOT }}
           token: ${{ secrets.COVAT_DATA_GH_TOKEN }}
           ref: "unreviewed-auto-update"
-      - name: Fetch new data
-        id: fetch-new-data
+      # - name: Fetch new data
+      #   id: fetch
+      #   env:
+      #     COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
+      #   run: |
+      #     echo "date=`date --rfc-email`" | tee -a "$GITHUB_OUTPUT"
+      #     hatch run dldata --loglevel=debug -c dldata.toml
+      # - name: Upload new data
+      #   working-directory: ${{ env.COVAT_DATA_ROOT }}
+      #   run: |
+      #     git add -A .
+      #     if ! git diff-index --quiet HEAD; then
+      #         git commit -m "Automatic data update ${{steps.fetch.outputs.date}}"
+      #         git push
+      #     fi
+      - uses: actions/checkout@v3
+        with:
+          path: notebooks/gh-pages
+          ref: gh-pages
+          sparse-checkout: export/data-rev.txt
+          sparse-checkout-cone-mode: false
+      - name: Prepare data update
+        id: prepareupdate
         env:
-          COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_FULLNAME': ${{ github.repository }}
         run: |
-          echo "date=`date --rfc-email`" | tee "$GITHUB_OUTPUT"
-          hatch run dldata --loglevel=debug -c dldata.toml
-      - name: Upload data
-        working-directory: ${{ env.COVAT_DATA_ROOT }}
-        run: |
-          git add -A .
-          if ! git diff-index --quiet HEAD; then
-              git commit -m "Automatic data update ${{steps.fetch-new-data.outputs.date}}"
-              git push
+          REV_PATH="export/data-rev.txt"
+          LAST_REV=`cat "gh-pages/$REV_PATH"`
+
+          cd "$COVDATA_REPO_ROOT"
+
+          if ! git diff --quiet "$LAST_REV" -- data/basg-medicineshortage; then
+            hatch run collectshortage
+            DIDCHANGE=1
           fi
+          if ! git diff --quiet "$LAST_REV" -- data/abwasser; then
+            hatch run collecthydro
+            DIDCHANGE=1
+          fi
+
+          if [ -n "$DIDCHANGE" ]; then
+            echo "updated=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Re-generate pages
+        if: steps.prepareupdate.outputs.updated
+        run: |
+          cd "$COVDATA_REPO_ROOT"
+          CUR_REV=`git rev-parse HEAD`
+          cd "$GITHUB_WORKSPACE/notebooks/gh-pages"
+          git sparse-checkout disable # We don't even want to read, but needed for writing
+          hatch -v -e notebooks run sh -c \
+            "cd notebooks && python -m covidat.export --execute --notebook monitoring.ipynb""
+          echo "$CUR_REV" >"$REV_PATH"
+          git add -A
+          git commit --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"
+          git push --force-with-lease
+
+
+
+

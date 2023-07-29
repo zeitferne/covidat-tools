@@ -1,6 +1,9 @@
 name: Update covidat-data
 on:
   workflow_dispatch:
+    inputs:
+      force-notebook-update:
+        type: boolean
   schedule:
     - cron: "24 15,5 * * *"
 permissions:
@@ -63,13 +66,15 @@ jobs:
           sparse-checkout-cone-mode: false
       - name: Prepare data update
         id: prepareupdate
+        env:
+          FORCE_UPDATE: ${{ inputs.force-notebook-update }}
         run: |
           LAST_REV=`cat "notebooks/gh-pages/$REV_PATH"`
           echo "Previous revision: $LAST_REV"
 
           cd "$COVDATA_REPO_ROOT"
 
-          if ! git diff --quiet "$LAST_REV" -- data/basg-medicineshortage data/abwasser; then
+          if ! "$FORCE_UPDATE" = true || git diff --quiet "$LAST_REV" -- data/basg-medicineshortage data/abwasser; then
             hatch run sh -c 'collectshortage && collecthydro && python -m covidat.collectsvat'
             echo "updated=1" >> "$GITHUB_OUTPUT"
           fi

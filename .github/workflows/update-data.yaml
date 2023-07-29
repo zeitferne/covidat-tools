@@ -16,6 +16,7 @@ jobs:
     env:
       COVDATA_REPO_ROOT: covidat-data
       COVAT_DATA_ROOT: covidat-data/data
+      COVAT_COLLECT_ROOT: ${{github.workspace}}/tmpdata
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
@@ -23,9 +24,6 @@ jobs:
           python-version: "3.11"
       - name: Setup
         run: |
-          sudo locale-gen de_AT.UTF-8
-          sudo update-locale
-
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           python -m pip install --upgrade pip
@@ -84,6 +82,9 @@ jobs:
       - name: Re-generate pages
         if: steps.prepareupdate.outputs.updated
         run: |
+          sudo locale-gen de_AT.UTF-8
+          sudo update-locale
+
           cd "$COVDATA_REPO_ROOT"
           CUR_REV=`git rev-parse HEAD`
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"

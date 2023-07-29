@@ -12,7 +12,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--sync-to-s3")
     parser.add_argument("--execute", action="store_true")
-    parser.add_argument("--notebook")
+    parser.add_argument("--notebook", type=Path)
     args = parser.parse_args()
 
     pdir = Path(__file__).absolute().parent
@@ -32,9 +32,9 @@ def main():
     pdir_pat = re.compile(pdir.encode("utf-8"), re.IGNORECASE)
 
     output_dir = Path("gh-pages/export")
-    if output_dir.exists():
+    if args.notebook is None and output_dir.exists():
         rmtree(output_dir)
-    output_dir.mkdir()
+    output_dir.mkdir(exist_ok=True)
 
     nbfiles = (args.notebook,) if args.notebook else Path(".").glob("*.ipynb")
 
@@ -53,6 +53,10 @@ def main():
             exportargs.append("--no-input")
         if args.execute:
             exportargs.append("--execute")
+        print(nbfile, nbfile.parent)
+        filedir = output_dir / (nbfile.stem + "_files")
+        if filedir.exists():
+            rmtree(filedir)
         check_call(exportargs)
         fname = output_dir / nbfile.with_suffix(".html")
         with open(fname, "rb") as htmlfile:

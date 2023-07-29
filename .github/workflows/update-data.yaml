@@ -9,7 +9,8 @@ defaults:
   run:
     shell: bash
 jobs:
-  Download-data:
+  update:
+    name: "Update covidat-data and re-generate notebooks on changes"
     concurrency: update-data
     runs-on: ubuntu-latest
     env:
@@ -57,12 +58,9 @@ jobs:
           sparse-checkout-cone-mode: false
       - name: Prepare data update
         id: prepareupdate
-        env:
-          REPO_OWNER: ${{ github.repository_owner }}
-          REPO_FULLNAME': ${{ github.repository }}
         run: |
           REV_PATH="export/data-rev.txt"
-          LAST_REV=`cat "gh-pages/$REV_PATH"`
+          LAST_REV=`cat "notebooks/gh-pages/$REV_PATH"`
 
           cd "$COVDATA_REPO_ROOT"
 

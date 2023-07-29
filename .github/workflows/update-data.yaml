@@ -17,6 +17,7 @@ jobs:
       COVDATA_REPO_ROOT: ${{github.workspace}}/covidat-data
       COVAT_DATA_ROOT: ${{github.workspace}}/covidat-data/data
       COVAT_COLLECT_ROOT: ${{github.workspace}}/tmpdata
+      REV_PATH: "export/data-rev.txt"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
@@ -62,7 +63,6 @@ jobs:
       # - name: Prepare data update
       #   id: prepareupdate
       #   run: |
-      #     REV_PATH="export/data-rev.txt"
       #     LAST_REV=`cat "notebooks/gh-pages/$REV_PATH"`
       #     echo "Previous revision: $LAST_REV"
 

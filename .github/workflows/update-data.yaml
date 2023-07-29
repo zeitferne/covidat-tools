@@ -64,19 +64,12 @@ jobs:
         run: |
           REV_PATH="export/data-rev.txt"
           LAST_REV=`cat "notebooks/gh-pages/$REV_PATH"`
+          echo "Previous revision: $LAST_REV"
 
           cd "$COVDATA_REPO_ROOT"
 
-          if ! git diff --quiet "$LAST_REV" -- data/basg-medicineshortage; then
-            hatch run collectshortage
-            DIDCHANGE=1
-          fi
-          if ! git diff --quiet "$LAST_REV" -- data/abwasser; then
-            hatch run collecthydro
-            DIDCHANGE=1
-          fi
-
-          if [ -n "$DIDCHANGE" ]; then
+          if ! git diff --quiet "$LAST_REV" -- data/basg-medicineshortage data/abwasser; then
+            hatch run sh -c 'collectshortage && collecthydro'
             echo "updated=1" >> "$GITHUB_OUTPUT"
           fi
       - name: Re-generate pages

@@ -739,7 +739,7 @@ def run_bot(botio: BotStateIo, newfile: Openable) -> None:
                     replyto = resp.data["id"]
                     logger.info("Created tweet %s", replyto)
             except:
-                # Error occured during tweet (even KeyboardInterrupt) =>
+                # Error occurred during tweet (even KeyboardInterrupt) =>
                 # Stop tweeting until manual intervention
                 botio.write_botstate(dataclasses.replace(botstate, brokenreplyto=replyto))
                 raise

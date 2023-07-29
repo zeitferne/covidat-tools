@@ -20,7 +20,7 @@ from zipfile import ZipFile
 from zoneinfo import ZoneInfo
 
 from .dlutil import dl_with_header_cache, get_moddate, write_hdr_file
-from .util import DATAROOT, DL_TSTAMP_FMT
+from .util import DATAROOT, DL_TSTAMP_FMT, LOG_FORMAT
 
 logger = logging.getLogger(__name__)
 DateExtractor = Callable[[urllib.response.addinfourl, bytes], datetime | None]
@@ -305,7 +305,7 @@ def main() -> None:
     logging.basicConfig(
         filename=args.logfile,
         level=args.loglevel.upper() if args.loglevel else args.loglevel,
-        format="%(asctime)s:%(levelname)s:%(name)s:%(message)s",
+        format=LOG_FORMAT,
     )
 
     with open(args.config_path, "rb") as cfgfile:

@@ -161,7 +161,7 @@ def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame
             }
         return (veasp.groupby(["Zulassungsnummer", "Verwendung"]).agg(agg)).reset_index()
     except StopIteration:
-        raise ValueError(f"{fname}: Bad status: {veasp['Status'].unique()}")
+        raise ValueError(f"{fname}: Bad status: {veasp['Status'].unique()}") from None
 
 
 def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter):
@@ -252,7 +252,7 @@ def collectshortage_ex(dirname, outname):
             except Exception:
                 traceback.print_exc()
                 print(
-                    "The previous exception occured during processing of",
+                    "The previous exception occurred during processing of",
                     fname,
                     file=sys.stderr,
                     flush=True,

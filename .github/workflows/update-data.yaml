@@ -35,6 +35,7 @@ jobs:
           path: ${{ env.COVDATA_REPO_ROOT }}
           token: ${{ secrets.COVAT_DATA_GH_TOKEN }}
           ref: "unreviewed-auto-update"
+          fetch-depth: 16 # We run git diff to compare old index later
       # - name: Fetch new data
       #   id: fetch
       #   env:
@@ -50,7 +51,8 @@ jobs:
       #         git commit -m "Automatic data update ${{steps.fetch.outputs.date}}"
       #         git push
       #     fi
-      - uses: actions/checkout@v3
+      - name: checkout gh-pages
+        uses: actions/checkout@v3
         with:
           path: notebooks/gh-pages
           ref: gh-pages
@@ -84,10 +86,11 @@ jobs:
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"
           git sparse-checkout disable # We don't even want to read, but needed for writing
           hatch -v -e notebooks run sh -c \
-            "cd notebooks && python -m covidat.export --execute --notebook monitoring.ipynb""
+            "cd notebooks && python -m covidat.export --execute --notebook monitoring.ipynb"
           echo "$CUR_REV" >"$REV_PATH"
           git add -A
-          git commit --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"
+          # {{ steps.fetch.outputs.date }}
+          git commit --amend -m "Automatic notebook update TODO"
           git push --force-with-lease
 
 

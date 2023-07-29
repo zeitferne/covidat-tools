@@ -14,8 +14,8 @@ jobs:
     concurrency: update-data
     runs-on: ubuntu-latest
     env:
-      COVDATA_REPO_ROOT: covidat-data
-      COVAT_DATA_ROOT: covidat-data/data
+      COVDATA_REPO_ROOT: ${{github.workspace}}/covidat-data
+      COVAT_DATA_ROOT: ${{github.workspace}}/covidat-data/data
       COVAT_COLLECT_ROOT: ${{github.workspace}}/tmpdata
     steps:
       - uses: actions/checkout@v3

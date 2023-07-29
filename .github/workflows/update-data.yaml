@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "24 15,5 * * *"
 permissions:
-  contents: read
+  contents: write
 defaults:
   run:
     shell: bash
@@ -38,21 +38,21 @@ jobs:
           token: ${{ secrets.COVAT_DATA_GH_TOKEN }}
           ref: "unreviewed-auto-update"
           fetch-depth: 16 # We run git diff to compare old index later
-      # - name: Fetch new data
-      #   id: fetch
-      #   env:
-      #     COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
-      #   run: |
-      #     echo "date=`date --rfc-email`" | tee -a "$GITHUB_OUTPUT"
-      #     hatch run dldata --loglevel=debug -c dldata.toml
-      # - name: Upload new data
-      #   working-directory: ${{ env.COVAT_DATA_ROOT }}
-      #   run: |
-      #     git add -A .
-      #     if ! git diff-index --quiet HEAD; then
-      #         git commit -m "Automatic data update ${{steps.fetch.outputs.date}}"
-      #         git push
-      #     fi
+      - name: Fetch new data
+        id: fetch
+        env:
+          COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
+        run: |
+          echo "date=`date --rfc-email`" | tee -a "$GITHUB_OUTPUT"
+          hatch run dldata --loglevel=debug -c dldata.toml
+      - name: Upload new data
+        working-directory: ${{ env.COVAT_DATA_ROOT }}
+        run: |
+          git add -A .
+          if ! git diff-index --quiet HEAD; then
+              git commit -m "Automatic data update ${{steps.fetch.outputs.date}}"
+              git push
+          fi
       - name: checkout gh-pages
         uses: actions/checkout@v3
         with:
@@ -60,20 +60,20 @@ jobs:
           ref: gh-pages
           sparse-checkout: export/data-rev.txt
           sparse-checkout-cone-mode: false
-      # - name: Prepare data update
-      #   id: prepareupdate
-      #   run: |
-      #     LAST_REV=`cat "notebooks/gh-pages/$REV_PATH"`
-      #     echo "Previous revision: $LAST_REV"
+      - name: Prepare data update
+        id: prepareupdate
+        run: |
+          LAST_REV=`cat "notebooks/gh-pages/$REV_PATH"`
+          echo "Previous revision: $LAST_REV"
 
-      #     cd "$COVDATA_REPO_ROOT"
+          cd "$COVDATA_REPO_ROOT"
 
-      #     if ! git diff --quiet "$LAST_REV" -- data/basg-medicineshortage data/abwasser; then
-      #       hatch run sh -c 'collectshortage && collecthydro && python -m covidat.collectsvat'
-      #       echo "updated=1" >> "$GITHUB_OUTPUT"
-      #     fi
+          if ! git diff --quiet "$LAST_REV" -- data/basg-medicineshortage data/abwasser; then
+            hatch run sh -c 'collectshortage && collecthydro && python -m covidat.collectsvat'
+            echo "updated=1" >> "$GITHUB_OUTPUT"
+          fi
       - name: Re-generate pages
-        # if: steps.prepareupdate.outputs.updated
+        if: steps.prepareupdate.outputs.updated
         run: |
           #sudo locale-gen de_AT.UTF-8
           #sudo update-locale
@@ -86,7 +86,7 @@ jobs:
             "cd notebooks && python -m covidat.export --notebook monitoring.ipynb"
           echo "$CUR_REV" >"$REV_PATH"
           git add -A
-          git commit --amend -m "Automatic notebook update TODO"
+          git commit --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"
           git push --force-with-lease
 
 

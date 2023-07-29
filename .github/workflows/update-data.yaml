@@ -69,7 +69,7 @@ jobs:
           cd "$COVDATA_REPO_ROOT"
 
           if ! git diff --quiet "$LAST_REV" -- data/basg-medicineshortage data/abwasser; then
-            hatch run sh -c 'collectshortage && collecthydro'
+            hatch run sh -c 'collectshortage && collecthydro && python -m covidat.collectsvat'
             echo "updated=1" >> "$GITHUB_OUTPUT"
           fi
       - name: Re-generate pages

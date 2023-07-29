@@ -83,7 +83,7 @@ jobs:
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"
           git sparse-checkout disable # We don't even want to read, but needed for writing
           hatch -v -e notebooks run sh -c \
-            "cd notebooks && python -m covidat.export --notebook monitoring.ipynb"
+            "cd notebooks && python -m covidat.export --execute --notebook monitoring.ipynb"
           echo "$CUR_REV" >"$REV_PATH"
           git add -A
           git commit --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"

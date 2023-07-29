@@ -23,6 +23,7 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "3.11"
+          cache: "pip"
       - name: Setup
         run: |
           git config --global user.name "github-actions[bot]"
@@ -75,8 +76,8 @@ jobs:
       - name: Re-generate pages
         if: steps.prepareupdate.outputs.updated
         run: |
-          #sudo locale-gen de_AT.UTF-8
-          #sudo update-locale
+          sudo locale-gen de_AT.UTF-8
+          sudo update-locale
 
           cd "$COVDATA_REPO_ROOT"
           CUR_REV=`git rev-parse HEAD`

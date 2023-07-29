@@ -67,6 +67,7 @@ def main():
 <meta name="robots" content="noindex">
 <style>
         html, body { max-width: 1000px; margin: auto; }
+        .jp-OutputArea-child { overflow: auto !important; }
 </style>
 <title>""",
             1,

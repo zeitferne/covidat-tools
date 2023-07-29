@@ -2,10 +2,10 @@
 
 import csv
 import json
+import logging
 import lzma
 from datetime import UTC, datetime
 from itertools import zip_longest
-import logging
 
 from . import util
 
@@ -42,7 +42,7 @@ def collecthydro(prefixname: str, insubdir: bool = False):
 
 def main():
     logging.basicConfig(
-        level='INFO',
+        level="INFO",
         format=util.LOG_FORMAT,
     )
 

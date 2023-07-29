@@ -86,7 +86,7 @@ jobs:
             "cd notebooks && python -m covidat.export --execute --notebook monitoring.ipynb"
           echo "$CUR_REV" >"$REV_PATH"
           git add -A
-          git commit --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"
+          git commit --reset-author --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"
           git push --force-with-lease
 
 

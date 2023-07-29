@@ -81,6 +81,9 @@ jobs:
       - name: Re-generate pages
         if: steps.prepareupdate.outputs.updated
         run: |
+          sudo locale-gen de_AT.UTF8
+          sudo update-locale
+
           cd "$COVDATA_REPO_ROOT"
           CUR_REV=`git rev-parse HEAD`
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"

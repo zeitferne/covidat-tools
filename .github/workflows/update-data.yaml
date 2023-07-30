@@ -40,12 +40,14 @@ jobs:
           fetch-depth: 16 # We run git diff to compare old index later
       - name: Fetch new data
         id: fetch
+        if: !inputs.force-notebook-update
         env:
           COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
         run: |
           echo "date=`date --rfc-email`" | tee -a "$GITHUB_OUTPUT"
           PYTHONPATH=src python -m covidat.dldata --loglevel=debug -c dldata.toml
       - name: Upload new data
+        if: !inputs.force-notebook-update
         working-directory: ${{ env.COVAT_DATA_ROOT }}
         run: |
           git add -A .
@@ -100,7 +102,7 @@ jobs:
           echo "$CUR_REV" >"$REV_PATH"
 
           git add -A
-          git commit --reset-author --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"
+          git commit --reset-author --amend -m "Automatic notebook update ${{steps.fetch.outputs.date || '(forced)'}}"
           git push --force-with-lease
 
 

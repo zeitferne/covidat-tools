@@ -5,7 +5,7 @@ on:
       force-notebook-update:
         type: boolean
   schedule:
-    - cron: "24 15,5 * * *"
+    - cron: "24 17,3 * * *"
 permissions:
   contents: write
 defaults:
@@ -26,14 +26,10 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-          cache: "pip"
-      - name: Setup
+      - name: Setup git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          python -m pip install --upgrade pip
-          pip install --upgrade hatch
-          hatch -v env create default
       - name: Load old data
         uses: actions/checkout@v3
         with:
@@ -48,7 +44,7 @@ jobs:
           COVAT_BOT_FROM_EMAIL: ${{ secrets.COVAT_BOT_FROM_EMAIL }}
         run: |
           echo "date=`date --rfc-email`" | tee -a "$GITHUB_OUTPUT"
-          hatch run dldata --loglevel=debug -c dldata.toml
+          PYTHONPATH=src python -m covidat.dldata --loglevel=debug -c dldata.toml
       - name: Upload new data
         working-directory: ${{ env.COVAT_DATA_ROOT }}
         run: |
@@ -64,7 +60,7 @@ jobs:
           ref: gh-pages
           sparse-checkout: export/data-rev.txt
           sparse-checkout-cone-mode: false
-      - name: Prepare data update
+      - name: Check data update
         id: prepareupdate
         env:
           FORCE_UPDATE: ${{ inputs.force-notebook-update }}
@@ -74,8 +70,12 @@ jobs:
 
           cd "$COVDATA_REPO_ROOT"
 
-          if ! "$FORCE_UPDATE" = true || git diff --quiet "$LAST_REV" -- data/basg-medicineshortage data/abwasser; then
-            hatch run sh -c 'collectshortage && collecthydro && python -m covidat.collectsvat'
+          if [[ "$FORCE_UPDATE" = true ]] || ! git diff --quiet "$LAST_REV" -- \
+               'data/basg-medicineshortage/*_latest.*' \
+               'data/covid/abwassermonitoring/*_latest.*' \
+               'data/sozialversicherung-monatsberichte/Mb_*' \
+               'data/statat-weekly-deaths/*_latest.*'
+          then
             echo "updated=1" >> "$GITHUB_OUTPUT"
           fi
       - name: Re-generate pages
@@ -84,13 +84,21 @@ jobs:
           sudo locale-gen de_AT.UTF-8
           sudo update-locale
 
+          python -m pip install -U pip
+          pip install hatch
+          hatch -v env create notebooks
+          hatch -e notebooks run sh -c 'collectshortage && collecthydro && python -m covidat.collectsvat'
+
           cd "$COVDATA_REPO_ROOT"
           CUR_REV=`git rev-parse HEAD`
+
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"
+
           git sparse-checkout disable # We don't even want to read, but needed for writing
           hatch -v -e notebooks run sh -c \
             "cd notebooks && python -m covidat.export --execute --notebook monitoring.ipynb"
           echo "$CUR_REV" >"$REV_PATH"
+
           git add -A
           git commit --reset-author --amend -m "Automatic notebook update ${{steps.fetch.outputs.date}}"
           git push --force-with-lease

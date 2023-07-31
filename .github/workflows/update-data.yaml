@@ -47,6 +47,7 @@ jobs:
           echo "date=`date --rfc-email`" | tee -a "$GITHUB_OUTPUT"
           PYTHONPATH=src python -m covidat.dldata --loglevel=debug -c dldata.toml
       - name: Upload new data
+        id: upload
         if: ${{ !inputs.force-notebook-update }}
         working-directory: ${{ env.COVAT_DATA_ROOT }}
         run: |
@@ -54,8 +55,11 @@ jobs:
           if ! git diff-index --quiet HEAD; then
               git commit -m "Automatic data update ${{steps.fetch.outputs.date}}"
               git push
+              echo "updated=1" >> "$GITHUB_OUTPUT"
           fi
       - name: checkout gh-pages
+        id: checkout-pages
+        if: ${{ inputs.force-notebook-update || steps.fetch.outputs.updated }}
         uses: actions/checkout@v3
         with:
           path: notebooks/gh-pages
@@ -63,6 +67,7 @@ jobs:
           sparse-checkout: export/data-rev.txt
           sparse-checkout-cone-mode: false
       - name: Check data update
+        if: steps.checkout-pages.outcome == 'success'
         id: prepareupdate
         env:
           FORCE_UPDATE: ${{ inputs.force-notebook-update }}
@@ -88,16 +93,21 @@ jobs:
 
           python -m pip install -U pip
           pip install hatch
-          hatch -v env create notebooks
-          hatch -e notebooks run sh -c 'collectshortage && collecthydro && python -m covidat.collectsvat'
+          hatch -v -e notebooks run sh -exc \
+            'collectshortage && collecthydro && python -m covidat.collectsvat'
 
           cd "$COVDATA_REPO_ROOT"
           CUR_REV=`git rev-parse HEAD`
 
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"
 
+          # Avoid "Matplotlib is building the font cache; this may take a moment."
+          # appearing inside rendered output.
+          hatch -v -e notebooks run python -c \
+            'import matplotlib, matplotlib.pyplot; print(matplotlib.get_cachedir())'
+
           git sparse-checkout disable # We don't even want to read, but needed for writing
-          hatch -v -e notebooks run sh -c \
+          hatch -v -e notebooks run sh -exc \
             "cd notebooks && python -m covidat.export --execute --notebook monitoring.ipynb"
           echo "$CUR_REV" >"$REV_PATH"
 

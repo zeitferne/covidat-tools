@@ -48,7 +48,7 @@ jobs:
           PYTHONPATH=src python -m covidat.dldata --loglevel=debug -c dldata.toml
       - name: Upload new data
         id: upload
-        if: ${{ !inputs.force-notebook-update }}
+        if: ${{ steps.fetch.outcome == 'success' }}
         working-directory: ${{ env.COVAT_DATA_ROOT }}
         run: |
           git add -A .
@@ -59,7 +59,7 @@ jobs:
           fi
       - name: checkout gh-pages
         id: checkout-pages
-        if: ${{ inputs.force-notebook-update || steps.fetch.outputs.updated }}
+        if: ${{ inputs.force-notebook-update || steps.upload.outputs.updated }}
         uses: actions/checkout@v3
         with:
           path: notebooks/gh-pages
@@ -67,7 +67,7 @@ jobs:
           sparse-checkout: export/data-rev.txt
           sparse-checkout-cone-mode: false
       - name: Check data update
-        if: steps.checkout-pages.outcome == 'success'
+        if: ${{ steps.checkout-pages.outcome == 'success' }}
         id: prepareupdate
         env:
           FORCE_UPDATE: ${{ inputs.force-notebook-update }}

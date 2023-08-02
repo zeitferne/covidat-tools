@@ -6,7 +6,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from shutil import rmtree, which
 from subprocess import check_call
-
+import shlex
+import sys
 
 def main():
     parser = ArgumentParser()
@@ -46,6 +47,8 @@ def main():
             "nbconvert",
             "--to=html",
             "--ExtractOutputPreprocessor.enabled=true",
+            "--HTMLExporter.mathjax_url=",
+            "--HTMLExporter.require_js_url=",
             f"--output-dir={output_dir}",
             str(nbfile),
         ]
@@ -53,10 +56,10 @@ def main():
             exportargs.append("--no-input")
         if args.execute:
             exportargs.append("--execute")
-        print(nbfile, nbfile.parent)
         filedir = output_dir / (nbfile.stem + "_files")
         if filedir.exists():
             rmtree(filedir)
+        print("Running", shlex.join(exportargs), flush=True, file=sys.stderr)
         check_call(exportargs)
         fname = output_dir / nbfile.with_suffix(".html")
         with open(fname, "rb") as htmlfile:
@@ -64,7 +67,6 @@ def main():
         html = html.replace(
             b"<title>",
             b"""
-<meta name="robots" content="noindex">
 <style>
         html, body { max-width: 1000px; margin: auto; }
         .jp-OutputArea-child { overflow: auto !important; }

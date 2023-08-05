@@ -12,7 +12,7 @@ from . import util
 logger = logging.getLogger(__name__)
 
 
-def collecthydro(prefixname: str, insubdir: bool = False):
+def collecthydro(prefixname: str, *, insubdir: bool):
     subdir = "covid/abwassermonitoring"
     outname = util.COLLECTROOT / subdir / (prefixname + "_all.csv.xz")
     outname.parent.mkdir(parents=True, exist_ok=True)
@@ -47,7 +47,7 @@ def main():
     )
 
     collecthydro("blverlauf", insubdir=True)
-    collecthydro("natmon_01")
+    collecthydro("natmon_01", insubdir=False)
 
 
 if __name__ == "__main__":

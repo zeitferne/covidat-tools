@@ -169,6 +169,7 @@ ignore = [
   "TID252", # relative imports are OK
 
   "S603", # subprocess.call w/o shell
+  "S607", # start-process-with-partial-path
 ]
 unfixable = [
   #"F401",   # Don't touch unused imports

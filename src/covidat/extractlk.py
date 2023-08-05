@@ -116,7 +116,7 @@ def gethospoccupancy(mhosp: re.Match):
     return (n, n2)
 
 
-def extracthospvax(rtext: str, fname: str):
+def extracthospvax(rtext: str, _fname: str):
     rvals = [None] * 4
     mhosp = NST_VACC_RE.search(rtext)
     rvals[:2] = gethospoccupancy(mhosp)
@@ -138,7 +138,7 @@ def extracthospvax(rtext: str, fname: str):
             suffix = " Prozent"
             if rate.endswith(suffix):
                 return float(rate[: -len(suffix)].replace(",", ".")) / 100
-            elif rate == "alle":
+            elif rate == "alle":  # noqa: RET505
                 return 1
             raise ValueError("Unknown rate: " + rate)
 
@@ -424,15 +424,15 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
         if hasdate and not dt and m.group("deathdate").strip() != "unbekannt":
             raise ValueError(f"Bad date: '{m.group('deathdate')}' in {name}")
         if not hasdate and not m.group("cond"):
+            reasonable_len = 1000
             if (
                 "verstorben" not in m[0]
                 and "Obduktion" not in m[0]
-                and (m.start(0) - DEATH_START_RE.search(rtext).end(0) > 1000)
+                and (m.start(0) - DEATH_START_RE.search(rtext).end(0) > reasonable_len)
             ):
                 raise ValueError(f"Really a death? '{m.group(0)}' in {name}")
-            else:
-                # print(name, n, m, m.groupdict())
-                n -= 1  # Not included in our heuristic
+            # print(name, n, m, m.groupdict())
+            n -= 1  # Not included in our heuristic
     expect = max(rtext.lower().count("todesda"), rtext.lower().count("vorerkrank"))
     if expect != n:
         raise ValueError(f"Missing entries in {name}: expected {expect}, found {n}")
@@ -443,20 +443,19 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
 def runextraction(args):
     done = set()
     try:
-        oldfile_h = open("extractlk.csv", encoding="utf-8", newline="\n")
+        with open("extractlk.csv", encoding="utf-8", newline="") as oldfile_h:
+            oldfile = csv.DictReader(oldfile_h, delimiter=";")
+            for row in oldfile:
+                # print(row)
+                done.add(row["id"])
     except FileNotFoundError:
         pass
-    else:
-        oldfile = csv.DictReader(oldfile_h, delimiter=";")
-        for row in oldfile:
-            # print(row)
-            done.add(row["id"])
     openmode = "w" if not done else "a"
     # sys.exit(f"{openmode=} {len(done)=}")
     # raise
     with (
-        open("extractlk.csv", openmode, encoding="utf-8", newline="\n") as ofile_h,
-        open("extractlk.dead.csv", openmode, encoding="utf-8", newline="\n") as deathfile_h,
+        open("extractlk.csv", openmode, encoding="utf-8", newline="") as ofile_h,
+        open("extractlk.dead.csv", openmode, encoding="utf-8", newline="") as deathfile_h,
     ):
         ofile = csv.DictWriter(
             ofile_h,

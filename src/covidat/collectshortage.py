@@ -64,9 +64,9 @@ def norm_name(name: pd.Series):
 
 
 def load_azr():
-    cachefile = util.COLLECTROOT / "medshort/ASP-Register.pkl"
+    cachefile = util.COLLECTROOT / "medshort/ASP-Register.csv"
     try:
-        azr = pd.read_pickle(cachefile)
+        azr = pd.read_csv(cachefile)
     except FileNotFoundError:
         logger.info("Regenerating ASP-Register cache...")
         srcs = []
@@ -74,7 +74,7 @@ def load_azr():
         for srcname in aspdir.glob("ASP-Register_2*.xlsx"):
             srcs.append(pd.read_excel(srcname, header=0))
         azr = pd.concat(srcs)
-        azr.to_pickle(cachefile)
+        azr.to_csv(cachefile, index=False)
         logger.info("Regenerated cache at %s", cachefile)
     azr["Zulassungsnummer"] = azr["Zulassungsnummer"].str.strip()
     azr.drop_duplicates("Zulassungsnummer", keep="last", inplace=True)
@@ -91,8 +91,8 @@ def agg_status(s: pd.Series):
         "verfügbar"
         if (s == "verfügbar").all()
         else "teilweise verfügbar"
-        if "verfügbar" in s.values
-        else next(p for p in cat_prio if p in s.values)
+        if "verfügbar" in s.array
+        else next(p for p in cat_prio if p in s.array)
     )
 
 
@@ -105,7 +105,7 @@ cat_prio = [
 ][::-1]
 
 
-def load_veasp_xml(fname, azr: pd.DataFrame, only_statagg=False) -> pd.DataFrame:
+def load_veasp_xml(fname, azr: pd.DataFrame, *, only_statagg: bool) -> pd.DataFrame:
     veasp = pd.read_xml(fname, parser="etree", xpath="./Packungen/Packung")
     veasp.rename(
         columns={"Bezeichnung_Arzneispezialitaet": "Name"},

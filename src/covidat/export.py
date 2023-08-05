@@ -26,7 +26,7 @@ def main():
         raise ValueError("Repo root not found")
 
     pdir = re.escape(str(pdir.parent).replace("\\", "/"))
-    if len(pdir) > 2 and pdir[1] == ":":
+    if len(pdir) > 2 and pdir[1] == ":":  # noqa: PLR2004
         pdir = f"(?:{pdir})|(?:{pdir[2:]})"
     pdir = f"(?:{pdir})|(?:{re.escape(os.path.realpath(Path.home()))})"
     pdir = f"(?:{pdir})|(?:{re.escape(str(Path.home()))})"

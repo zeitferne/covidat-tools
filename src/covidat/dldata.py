@@ -13,6 +13,7 @@ import typing
 import urllib.response
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from http import HTTPStatus
 from os.path import basename
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -105,7 +106,7 @@ def dl_url(
         olddate = olddate_raw.strftime("%Y-%m-%d %H:%M") if olddate_raw else None
         if not ok:
             status = getattr(resp, "status", "")
-            if status == 304 and oldheaders:
+            if status == HTTPStatus.NOT_MODIFIED and oldheaders:
                 logger.info("H 304 %s (Kept: %s)", url, olddate or oldheaders.get("Etag"))
             else:
                 logger.warning("E %s %s %r", status, url, resp)
@@ -131,7 +132,7 @@ def dl_url(
             return newdir / f"{fstem}_{dt_stamp}{fext_real}", fext_real
 
         def commit_headers():
-            write_hdr_file(resp.headers, hdrfilepath)
+            write_hdr_file(resp.headers, hdrfilepath, allow_existing=True)
 
         def is_header_updated(name):
             oldval = None if oldheaders is None else oldheaders.get(name)
@@ -148,7 +149,7 @@ def dl_url(
 
         newpath, fext = fpath_from_resp(resp) if archive else (dldir / fname, fext)
         if archive and newpath.exists():
-            logger.info("Same modification date: %s (Kept: %s)", simpname(newpath))
+            logger.info("Same modification date: %s (Kept: %s)", url, simpname(newpath))
             maybe_commit_headers()
             return None
 
@@ -156,8 +157,7 @@ def dl_url(
         newdir.mkdir(parents=True, exist_ok=True)
 
         dlpath = newpath.with_suffix(newpath.suffix + ".tmp")
-        of = lzma.open(dlpath, "wb") if compress else open(dlpath, "wb")
-        with of:
+        with lzma.open(dlpath, "wb") if compress else open(dlpath, "wb") as of:
             of.write(data)
 
         linkpath = dldir / f"{fstem}_latest{fext}"
@@ -218,7 +218,7 @@ def ages_versiondate(resp: urllib.response.addinfourl, data: bytes) -> datetime 
 
 
 @date_extractor
-def medshort_updatedate(resp: urllib.response.addinfourl, data: bytes) -> datetime | None:
+def medshort_updatedate(_resp: urllib.response.addinfourl, data: bytes) -> datetime | None:
     # Daten zuletzt aktualisiert am: 2022-12-10 00:31:12
     tmatch = re.search(rb"aktualisiert am: ([0-9-]+ [0-9:]+)", data)
     if not tmatch:
@@ -231,6 +231,7 @@ def medshort_updatedate(resp: urllib.response.addinfourl, data: bytes) -> dateti
 def execute_dlset(
     dlset: dict[str, Any],
     cfg: dict[str, Any],
+    *,
     only_archivable: bool,
     tag_map: dict[str, bool],
     dry_run: bool,

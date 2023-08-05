@@ -2,6 +2,7 @@
 
 import sys
 from datetime import date, timedelta
+from http import HTTPStatus
 from http.client import HTTPSConnection
 from urllib.error import HTTPError
 
@@ -34,7 +35,7 @@ def requestkennzahlen_single(conn: HTTPSConnection, dt: date, lastfmt_idx: int) 
         conn.request("GET", url, headers={"From": dlutil.FROM_EMAIL})
         with conn.getresponse() as resp:
             is_notfound = False
-            if resp.status == 200:
+            if resp.status == HTTPStatus.OK:
                 data = resp.read()
                 is_notfound = b"Internet-Adresse (URL) ist auf unserem Server nicht oder nicht mehr vorhanden" in data
                 if not is_notfound:
@@ -43,7 +44,7 @@ def requestkennzahlen_single(conn: HTTPSConnection, dt: date, lastfmt_idx: int) 
                         ofile.write(data)
                     return fmt_idx
             resp.read()
-            if is_notfound or resp.status == 404:
+            if is_notfound or resp.status == HTTPStatus.NOT_FOUND:
                 continue
             raise HTTPError(url, resp.status, resp.reason, resp.headers, None)
     print("No data found for", dt, dt.weekday(), file=sys.stderr)

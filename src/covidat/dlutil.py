@@ -9,6 +9,7 @@ from http import HTTPStatus
 from http.client import HTTPMessage, parse_headers
 from logging import getLogger
 from urllib.error import HTTPError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from .util import Openable
@@ -50,7 +51,7 @@ def get_moddate(hdrs: Message) -> datetime | None:
 
 
 def dl_if_not_modified(
-    url: str, lastheaders: Message | None, dry_run: bool = False
+    url: str, lastheaders: Message | None, *, dry_run: bool
 ) -> tuple[bool, HTTPError | urllib.response.addinfourl]:
     reqheaders = {
         "From": FROM_EMAIL,
@@ -63,6 +64,8 @@ def dl_if_not_modified(
         if mdate:
             reqheaders["If-Modified-Since"] = mdate
     req = Request(url, headers=reqheaders)
+    if urlparse(req.full_url).scheme not in ("http", "https"):
+        raise ValueError("Unexpected scheme in URL: " + url)
     if dry_run:
         return False, HTTPError(
             req.full_url,
@@ -72,7 +75,8 @@ def dl_if_not_modified(
             None,
         )
     try:
-        resp = urlopen(req, context=create_unsafe_ssl_ctx())
+        # We check the scheme above, but ruff does not understand that, use noqa
+        resp = urlopen(req, context=create_unsafe_ssl_ctx())  # noqa: S310
     except HTTPError as e:
         if e.status == HTTPStatus.NOT_MODIFIED:
             return False, e
@@ -82,20 +86,19 @@ def dl_if_not_modified(
 
 def _read_header_file(hdrfilepath: Openable) -> HTTPMessage | None:
     try:
-        hdrf = open(hdrfilepath, "rb")
+        with open(hdrfilepath, "rb") as hdrf:
+            return parse_headers(hdrf)
     except FileNotFoundError:
         return None
-    with hdrf:
-        return parse_headers(hdrf)
 
 
-def write_hdr_file(resp_headers: Message, ofilepath: Openable, allow_existing=True) -> None:
+def write_hdr_file(resp_headers: Message, ofilepath: Openable, *, allow_existing: bool) -> None:
     with open(ofilepath, "wb" if allow_existing else "xb") as of:
         of.write(resp_headers.as_bytes())
 
 
 def dl_with_header_cache(
-    url: str, hdrfilepath: Openable, dry_run: bool = False
+    url: str, hdrfilepath: Openable, *, dry_run: bool
 ) -> tuple[bool, HTTPError | urllib.response.addinfourl, HTTPMessage | None]:
     hdrs = _read_header_file(hdrfilepath)
     if not hdrs:

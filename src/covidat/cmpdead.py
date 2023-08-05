@@ -65,9 +65,12 @@ class DiffData:
         return self.new.last_date.date() == self.old.last_date.date()
 
 
+UNICODE_SAFE_UPPER = 0x10FF
+
+
 def tlen(s):
     # Extremely simplified (& over-estimating) tweet len calculation
-    return sum(1 if ord(c) <= 0x10FF else 2 for c in s)
+    return sum(1 if ord(c) <= UNICODE_SAFE_UPPER else 2 for c in s)
 
 
 AG_IDX_COLS = ["Datum", "BundeslandID", "AltersgruppeID", "Geschlecht"]
@@ -181,10 +184,10 @@ def cmp_dead(old: DayData, new: DayData) -> DiffData:
             or len(bezmatch) == 1
         ):
             diff.drop(row[0], inplace=True)
-            for bezkeytail, loc, anzTot in bezmatch[["Bezirk", "AnzahlTot"]].itertuples():
+            for bezkeytail, loc, anztot in bezmatch[["Bezirk", "AnzahlTot"]].itertuples():
                 key = row.Index[:-1] + (loc,)
                 if len(bezmatch) != 1:
-                    row = row._replace(AnzahlTot=anzTot)
+                    row = row._replace(AnzahlTot=anztot)  # noqa: PLW2901
                 diff.loc[key] = row[1:]
                 bezopen.loc[(*bezkey, bezkeytail), "AnzahlTot"] -= row.AnzahlTot
         else:
@@ -209,10 +212,13 @@ def cmp_dead(old: DayData, new: DayData) -> DiffData:
     return DiffData(old, new, diff.sort_index())
 
 
+DAYS_PER_WEEK = 7
+
+
 def reldate(ddate: pd.Timestamp, tod: pd.Timestamp) -> str:
     return (
         ddate.strftime("%a").removesuffix(".")
-        if (tod - ddate).days < 7
+        if (tod - ddate).days < DAYS_PER_WEEK
         else ddate.strftime("%d.%m")
         if ddate.year == tod.year
         else ddate.strftime("%d.%m.%Y")
@@ -252,12 +258,12 @@ def split_multisum_entries(diffentries: pd.DataFrame) -> pd.DataFrame:
     diffentries = diffentries.copy()
     extra: list[pd.DataFrame] = [diffentries]
 
-    def corr0(sel: pd.Series, dir: int) -> None:
+    def corr0(sel: pd.Series, direction: int) -> None:
         if not sel.any():
             return
-        diffentries.loc[sel, "AnzahlTot"] -= dir
+        diffentries.loc[sel, "AnzahlTot"] -= direction
         corrs = diffentries.loc[sel].copy()
-        corrs["AnzahlTot"] = dir
+        corrs["AnzahlTot"] = direction
         extra.append(corrs)
 
     while True:
@@ -374,6 +380,9 @@ def without_zerosum_corr(diffentries: pd.DataFrame, mincorrdate: pd.Timestamp) -
     return (diffentries, CorrInfo(n_corr=n_corr, mindate=mindate, maxdate=maxdate))
 
 
+MAX_UNPROCESSED_DIFFENTRIES = 5
+
+
 def format_dead(diff: DiffData) -> str:
     if len(diff.diff) == 0:
         return ""
@@ -390,7 +399,7 @@ def format_dead(diff: DiffData) -> str:
 
     result = []
 
-    if len(diffentries) > 5:
+    if len(diffentries) > MAX_UNPROCESSED_DIFFENTRIES:
         diffentries, summary = split_summary(diffentries, tod - timedelta(CURRENT_PERIOD_NDAYS))
         result += format_summary_rows(summary, tod)
         diffentries, corrinfo2 = without_zerosum_corr(diffentries, tod - timedelta(RECENT_NDAYS + 7))
@@ -459,7 +468,7 @@ def diff_to_emojis(diffentries: pd.DataFrame) -> Iterable[str]:
 MAX_TWEET_LEN = 278  # Two chars space for errors
 
 
-def format_dead_tweets(diff: DiffData, silent_intraday: bool = False) -> list[str]:
+def format_dead_tweets(diff: DiffData, *, silent_intraday: bool) -> list[str]:
     rows_raw = format_dead(diff)
     datestamp = diff.new.creationdate.strftime("%a %d.%m.%Y" + (" %H:%M" if diff.is_intraday else ""))
     allsum = diff.new.sumdead
@@ -513,13 +522,12 @@ def format_dead_tweets(diff: DiffData, silent_intraday: bool = False) -> list[st
     tweets: list[str] = []
     for content in tweet_contents:
 
-        def mktweet():
+        def mktweet(content, *, header=header):
             return header + "\n".join(content) + f"\n{len(tweets) + 1}/{len(tweet_contents)}"
 
-        tweet = mktweet()
+        tweet = mktweet(content)
         if content is tweet_contents[-1]:
-            content += ["", epilog]
-            extratweet = mktweet()
+            extratweet = mktweet([*content, "", epilog])
             if tlen(extratweet) <= MAX_TWEET_LEN:
                 tweet = extratweet
         assert tlen(tweet) <= MAX_TWEET_LEN, f"{tlen(tweet)=}"
@@ -539,20 +547,27 @@ def join_tweets(tweets: Iterable[str]):
 
 def print_cmp_one(old: Openable, new: Openable):
     diff = to_diff(old, new)
-    print(join_tweets(format_dead_tweets(diff) + format_weekstat_tweets(diff)))
+    print(
+        join_tweets(
+            format_dead_tweets(diff, silent_intraday=False) + format_weekstat_tweets(diff, silent_intraday=False)
+        )
+    )
     print(flush=True)
 
 
 def run_test(last_n: int) -> None:
-    paths = COLLECTROOT.glob("2*/*_*_orig_csv_ages")
+    paths = COLLECTROOT.glob("covid/ages_all/2*/*_*_orig_csv_ages")
     botio = InMemoryBotStateIo()
+    i = 0
     for path in tuple(sorted(paths))[-last_n:]:
         try:
+            i += 1
             print(f"run_bot({botio.persisted_state}, {path})", flush=True)
             run_bot(botio, path)
         except (FileNotFoundError, KeyError):
             traceback.print_exc()
             input("...")
+    print("Processed", i, "files in", COLLECTROOT)
 
 
 def format_weekstat_tweets(weekdiff: DiffData) -> list[str]:
@@ -599,7 +614,8 @@ def format_weekstat_tweets(weekdiff: DiffData) -> list[str]:
     remcnt = len(content) - firstcnt
     per_chunk_cnt = (MAX_TWEET_LEN - tlen("ii/NN")) // 2
     tweetcnt = 1 + ceil(remcnt / per_chunk_cnt)
-    if tweetcnt > 99:
+    tweet_limit = 4
+    if tweetcnt > tweet_limit:
         raise ValueError(f"Week summary too large: {tweetcnt=}")
     tweets = [header + "".join(content[:firstcnt]) + f"1/{tweetcnt}"]
     for i, chunkstart in enumerate(range(firstcnt, len(content), per_chunk_cnt), 2):
@@ -616,6 +632,9 @@ class BotState:
     brokenreplyto: str | None = None
 
 
+WEEKDAY_SUNDAY = 6
+
+
 def next_bot_state(newfile: str, botstate: BotState) -> tuple[list[str], BotState]:
     if botstate is None or not botstate.lastfile:
         return ([], BotState(lastfile=newfile))
@@ -626,7 +645,7 @@ def next_bot_state(newfile: str, botstate: BotState) -> tuple[list[str], BotStat
     diffdata = cmp_dead(load_dead(botstate.lastfile), newdata)
     tweets = format_dead_tweets(diffdata, silent_intraday=True)
 
-    if newdata.creationdate.weekday() == 6:
+    if newdata.creationdate.weekday() == WEEKDAY_SUNDAY:
         if botstate.lastfile_weekly:
             lastweek = load_dead(botstate.lastfile_weekly)
             if newdata.creationdate - lastweek.creationdate >= timedelta(6):
@@ -647,7 +666,7 @@ class BotStateIo(ABC):
         pass
 
     @abstractmethod
-    def write_botstate(self, state: BotState, only_create=False) -> None:
+    def write_botstate(self, state: BotState) -> None:
         pass
 
     @abstractmethod
@@ -666,9 +685,7 @@ class InMemoryBotStateIo(BotStateIo):
     def read_bot_state(self) -> BotState | None:
         return self.persisted_state
 
-    def write_botstate(self, state: BotState, only_create=False) -> None:
-        if only_create and self.persisted_state is not None:
-            raise FileExistsError("State already exists " + repr(self.persisted_state))
+    def write_botstate(self, state: BotState) -> None:
         self.persisted_state = state
 
     def get_twitter_client(self) -> Client:
@@ -684,17 +701,17 @@ class ProdBotStateIo(BotStateIo):
 
     def read_bot_state(self) -> BotState | None:
         try:
-            statef = open(self._STATEFILENAME, "rb")
+            with open(self._STATEFILENAME, "rb") as statef:
+                rawstate = json.load(statef)
         except FileNotFoundError as exc:
             logger.warning("state file %s not present %s", self._STATEFILENAME, exc)
             return None
-        with statef:
-            rawstate = json.load(statef)
+
         return BotState(**rawstate)
 
-    def write_botstate(self, state: BotState, only_create=False) -> None:
+    def write_botstate(self, state: BotState) -> None:
         statedata = dataclasses.asdict(state)
-        with open(self._STATEFILENAME, "x" if only_create else "w", encoding="utf-8") as statef:
+        with open(self._STATEFILENAME, "w", encoding="utf-8") as statef:
             json.dump(statedata, statef, indent=2)
 
     def get_twitter_client(self) -> Client:
@@ -713,8 +730,8 @@ class ProdBotStateIo(BotStateIo):
         return Client(**creds)
 
     def dump_result(self, dumpinfo: str) -> None:
-        OUTFILENAME = "botout.txt"
-        with open(OUTFILENAME, "a", encoding="utf-8") as outf:
+        outfilename = "botout.txt"
+        with open(outfilename, "a", encoding="utf-8") as outf:
             outf.write(dumpinfo)
 
 
@@ -731,8 +748,9 @@ def run_bot(botio: BotStateIo, newfile: Openable) -> None:
         replyto = botstate.replyto
         if replyto and botstate.brokenreplyto is None:
             client = botio.get_twitter_client()
+            tweet_limit = 7
             try:
-                if len(tweets) > 7:
+                if len(tweets) > tweet_limit:
                     raise ValueError(f"Too many tweets, balking: {len(tweets)}")
                 for tweet in tweets:
                     resp = client.create_tweet(in_reply_to_tweet_id=replyto, text=tweet)

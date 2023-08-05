@@ -5,6 +5,15 @@ default_file_extension = ".json"
 # covid/
 
   [[dlsets]]
+  urls = [
+      "https://www.tirol.gv.at/fileadmin/daten/abwasser/LagebildAbwasser.png",
+      "https://www.tirol.gv.at/fileadmin/daten/abwasser/abwasser.json",
+  ]
+  dir = "covid/abwassermonitoring/tirol"
+  sortdir_fmt = "%Y"
+
+
+  [[dlsets]]
   enable = false
   urls = ["https://covid19-dashboard.ages.at/data/data.zip"]
   archive_headers = true

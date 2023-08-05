@@ -6,6 +6,7 @@ import io
 import logging
 import lzma
 import mimetypes
+import os
 import re
 import tomllib
 import typing
@@ -13,7 +14,7 @@ import urllib.response
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from os.path import basename
-from pathlib import Path, PurePath, PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 from zipfile import ZipFile
@@ -34,7 +35,9 @@ def date_extractor(fn: DateExtractor):
     return fn
 
 
-def cmp_openfiles(f1, f2, buf1, buf2) -> bool:
+def cmp_openfiles(
+    f1: io.BufferedIOBase, f2: io.BufferedIOBase, buf1: bytearray | memoryview, buf2: bytearray | memoryview
+) -> bool:
     """Checks if files objects f1, f2 are equal. buf1 and buf2 must be
     objects of same lenght supporting the buffer protocol, preferably
     memoryviews."""
@@ -49,7 +52,9 @@ def cmp_openfiles(f1, f2, buf1, buf2) -> bool:
             return False
 
 
-def cmp_files(p1, p2, buf1, buf2) -> bool:
+def cmp_files(
+    p1: os.PathLike | str, p2: os.PathLike | str, buf1: bytearray | memoryview, buf2: bytearray | memoryview
+) -> bool:
     """Checks if files under paths p1, p2 are equal. buf1 and buf2 must be
     objects of same lenght supporting the buffer protocol, preferably
     memoryviews."""
@@ -59,7 +64,7 @@ def cmp_files(p1, p2, buf1, buf2) -> bool:
         return cmp_openfiles(f1, f2, buf1, buf2)
 
 
-def splitbasestem(fname: str | PurePath) -> tuple[str, str]:
+def splitbasestem(fname: os.PathLike | str) -> tuple[str, str]:
     fname = basename(fname)
     if not fname.lstrip("."):
         raise ValueError("Invalid file name for stemming: " + fname)

@@ -1,13 +1,14 @@
 import os
 import os.path
 import re
+import shlex
 import subprocess
+import sys
 from argparse import ArgumentParser
 from pathlib import Path
 from shutil import rmtree, which
 from subprocess import check_call
-import shlex
-import sys
+
 
 def main():
     parser = ArgumentParser()

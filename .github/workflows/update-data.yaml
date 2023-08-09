@@ -81,7 +81,8 @@ jobs:
                'data/basg-medicineshortage/*_latest.*' \
                'data/covid/abwassermonitoring/*_latest.*' \
                'data/sozialversicherung-monatsberichte/Mb_*' \
-               'data/statat-weekly-deaths/*_latest.*'
+               'data/statat-weekly-deaths/*_latest.*' \
+               ':^data/covid/abwassermonitoring/tirol/**'
           then
             echo "updated=1" >> "$GITHUB_OUTPUT"
           fi
@@ -112,8 +113,10 @@ jobs:
           echo "$CUR_REV" >"$REV_PATH"
 
           git add -A
-          git commit --reset-author --amend -m "Automatic notebook update ${{steps.fetch.outputs.date || '(forced)'}}"
-          git push --force-with-lease
+          if ! git diff-index --quiet HEAD; then
+            git commit --reset-author --amend -m "Automatic notebook update ${{steps.fetch.outputs.date || '(forced)'}}"
+            git push --force-with-lease
+          fi
 
 
 

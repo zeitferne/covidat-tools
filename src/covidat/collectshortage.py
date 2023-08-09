@@ -208,7 +208,7 @@ def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.Dict
         try:
             data = data.groupby([dkey, data["Verwendung"]]).agg({"Status": agg_status})
         except StopIteration:
-            raise ValueError(f"{fname}: Bad status: {data['Status'].unique()}")
+            raise ValueError(f"{fname}: Bad status: {data['Status'].unique()}") from None
         # print(fname)
         # print("\n".join(sorted(dkey.unique())))
         # input("...")

@@ -2,6 +2,7 @@ import argparse
 import csv
 import html
 import itertools
+import os
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -74,7 +75,7 @@ zu versorgenden Patientinnen (?:und|bzw\.) Patienten sind (?P<ricu>[0-9,.]+ Proz
 print(HOSP_WEEKLY_RE.pattern)
 
 
-def processfile(fname: str, ofile: csv.DictWriter, deathfile):
+def processfile(fname: Path, ofile: csv.DictWriter, deathfile):
     with open(fname, encoding="utf-8") as f:
         text = f.read()
     processtext(text, fname, ofile, deathfile)
@@ -117,7 +118,7 @@ def gethospoccupancy(mhosp: re.Match):
 
 
 def extracthospvax(rtext: str, _fname: str):
-    rvals = [None] * 4
+    rvals: list[None | int | float] = [None] * 4
     mhosp = NST_VACC_RE.search(rtext)
     rvals[:2] = gethospoccupancy(mhosp)
     mhosp = ICU_VACC_RE.search(rtext)
@@ -172,7 +173,7 @@ def extracthospvax(rtext: str, _fname: str):
 UHR_RE = re.compile(r"(\s+\d+) Uhr")
 
 
-def parsets(tsstr: str, fname: str):
+def parsets(tsstr: str, fname: str | os.PathLike):
     ts = dateparser.parse(UHR_RE.sub(r"\1:00 Uhr", html.unescape(tsstr)), languages=["de"])
     if not ts:
         raise ValueError(f"Bad date for {fname}: {html.unescape(tsstr)}")

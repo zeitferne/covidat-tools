@@ -549,7 +549,7 @@ def print_cmp_one(old: Openable, new: Openable):
     diff = to_diff(old, new)
     print(
         join_tweets(
-            format_dead_tweets(diff, silent_intraday=False) + format_weekstat_tweets(diff, silent_intraday=False)
+            format_dead_tweets(diff, silent_intraday=False) + format_weekstat_tweets(diff)
         )
     )
     print(flush=True)
@@ -635,7 +635,7 @@ class BotState:
 WEEKDAY_SUNDAY = 6
 
 
-def next_bot_state(newfile: str, botstate: BotState) -> tuple[list[str], BotState]:
+def next_bot_state(newfile: str, botstate: BotState | None) -> tuple[list[str], BotState]:
     if botstate is None or not botstate.lastfile:
         return ([], BotState(lastfile=newfile))
     if newfile == botstate.lastfile:

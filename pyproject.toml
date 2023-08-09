@@ -92,7 +92,7 @@ dependencies = [
   "ruff>=0.0.243",
 ]
 [tool.hatch.envs.lint.scripts]
-typing = "mypy --install-types --non-interactive {args:src/covidat tests}"
+typing = "mypy --install-types --non-interactive {args:src/covidat}"
 style = [
   "ruff {args:.}",
   "black --check --diff {args:.}",
@@ -170,6 +170,7 @@ ignore = [
 
   "S603", # subprocess.call w/o shell
   "S607", # start-process-with-partial-path
+  "FBT002", # Boolean default value in function definition
 ]
 unfixable = [
   #"F401",   # Don't touch unused imports
@@ -184,6 +185,9 @@ ban-relative-imports = "all"
 [tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.ruff.flake8-builtins]
+builtins-ignorelist = ["format"]
 
 [tool.coverage.run]
 source_pkgs = ["covidat", "tests"]

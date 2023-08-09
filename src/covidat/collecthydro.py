@@ -28,7 +28,7 @@ def collecthydro(prefixname: str, *, has_uww: bool, insubdir: bool, namecol: str
                 try:
                     fdata = json.load(f)
                 except json.JSONDecodeError as e:
-                    logger.warn("Failed parsing JSON in %s: %s", fname, e)
+                    logger.warning("Failed parsing JSON in %s: %s", fname, e)
                     continue
             fdate = (
                 datetime.strptime(fname.stem.removeprefix(prefixname + "_"), util.DL_TSTAMP_FMT)

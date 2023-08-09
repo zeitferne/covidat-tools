@@ -1,3 +1,5 @@
+# ruff: noqa: PLR2004
+# type: ignore
 import argparse
 import locale
 import logging
@@ -92,7 +94,6 @@ def labelend2(
     ax,
     mms,
     ycol,
-    ymax=None,
     cats="Bundesland",
     x="Datum",
     shorten=lambda c: SHORTNAME_BY_BUNDESLAND[c],
@@ -131,20 +132,8 @@ def labelend2(
                 )
 
 
-def _sortedlabels(ax, mms0, by, cat="Bundesland", x="Datum", fmtval=None):
-    hls = list(zip(*ax.get_legend_handles_labels()))
-    label_order = filterlatest(mms0, x).sort_values(by=by, ascending=False)[cat].unique()
-    hls = [(handle, label) for handle, label in hls if label in label_order]
-    hls.sort(key=lambda hl: np.where(label_order == hl[1]))
-    if fmtval:
-        for i, (art, bl) in enumerate(hls):
-            val = mms0.loc[mms0[cat] == bl, by].iloc[-1]
-            hls[i] = (art, f"{bl}: {fmtval(val)}")
-    return zip(*hls)
-
-
-def sortedlabels(ax, mms0, by, cat="Bundesland", x="Datum", fmtval=None):
-    hls = list(zip(*ax.get_legend_handles_labels()))
+def sortedlabels(ax, mms0, by, cat="Bundesland", fmtval=None):
+    hls = list(zip(*ax.get_legend_handles_labels(), strict=True))
     label_order = mms0.loc[~pd.isna(mms0[by])].groupby(cat).agg({by: "last"}).sort_values(by=by, ascending=False).index
     hls = [(handle, label) for handle, label in hls if label in label_order]
     hls.sort(key=lambda hl: np.where(label_order == hl[1]))
@@ -153,7 +142,7 @@ def sortedlabels(ax, mms0, by, cat="Bundesland", x="Datum", fmtval=None):
             # vals =  mms0.loc[mms0[cat] == bl, by]
             val = mms0.loc[mms0[cat] == bl, by].dropna().iloc[-1]
             hls[i] = (art, f"{bl}: {fmtval(val)}")
-    return zip(*hls)
+    return zip(*hls, strict=True)
 
 
 def sum_rows(df, cname, csval, agg="sum"):
@@ -182,7 +171,7 @@ ARCHIVE_PATCH_ROOT = COLLECTROOT / "covid/ages_all"
 DATE_FMT = "%Y%m%d"
 
 
-def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey=False, color=None):
+def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, *, ndays, logview, rwidth, sharey, color=None):
     newseries = fs_oo[vcol].rolling(rwidth).sum()
     if rwidth == 1:
         avgseries = fs_oo[vcol].rolling(7).mean()
@@ -205,7 +194,7 @@ def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey=Fals
     if not logview:
         diffseries = newseries.sub(oldseries, fill_value=0)
         # display(fs_oo.iloc[0]["Bundesland"], diffseries.tail(3), newseries.tail(3))
-    multiday = (fs_oo.index[-1] - ages_old_oo.index[-1]).days >= 2
+    multiday = (fs_oo.index[-1] - ages_old_oo.index[-1]).days > 1
     if multiday:
         ax.axvspan(
             ages_old_oo.index[-1] + timedelta(0.5),
@@ -283,10 +272,11 @@ def plt_mdiff(
     catcol,
     vcol="AnzahlTot",
     name="COVID-Tote",
-    sharey=True,
+    *,
+    sharey: bool,
+    logview: bool,
     rwidth=14,
     ndays=60,
-    logview=False,
     color=None,
 ):
     # sharey=True
@@ -294,7 +284,7 @@ def plt_mdiff(
     # display(g.axes)
     # style=dict(lw=0.5, mew=0, marker=".", markersize=5)
     maxy = 0
-    for k, ax in zip(fs[catcol].unique(), axs.flat):
+    for k, ax in zip(fs[catcol].unique(), axs.flat, strict=True):
         # print(k)
         fs_oo = fs[fs[catcol] == k].set_index("Datum")
         maxy_oo = fs_oo[vcol].iloc[-ndays:].rolling(rwidth).sum().max()
@@ -532,11 +522,11 @@ def plt_cat_sums_ax(  # TODO: Ugly!
         pltbar = StackBarPlotter(ax, dates, width=0.6, linewidth=0)
     else:
         pltbar = StackBarPlotter(ax, dates, areamode=True)
-    for label, color in zip(labels, colors):
-        df = data_cat[data_cat[catcol] == label].set_index("Datum").sort_index()
-        hs = df[col]
+    for label, color in zip(labels, colors, strict=True):
+        catdata = data_cat[data_cat[catcol] == label].set_index("Datum").sort_index()
+        hs = catdata[col]
         if weightcol:
-            hs = (hs * df[weightcol] / weights).replace(np.nan, 0)
+            hs = (hs * catdata[weightcol] / weights).replace(np.nan, 0)
         if mode == "direct":
             pass
         elif mode == "ratio":
@@ -788,10 +778,10 @@ def calc_shifted(
 
 def load_bezirke(daydate: date | None = None) -> pd.DataFrame:
     #  df = add_date(loadall("CovidFaelle_GKZ.csv"), "Datum")
-    df = add_date(load_day("CovidFaelle_Timeline_GKZ.csv", daydate), "Time", format=AGES_TIME_FMT)
-    df.rename(columns={"AnzahlTotTaeglich": "AnzahlTot"}, inplace=True)
-    df["inz"] = df["AnzahlFaelle7Tage"] / df["AnzEinwohner"] * 100_000
-    return df
+    bez = add_date(load_day("CovidFaelle_Timeline_GKZ.csv", daydate), "Time", format=AGES_TIME_FMT)
+    bez.rename(columns={"AnzahlTotTaeglich": "AnzahlTot"}, inplace=True)
+    bez["inz"] = bez["AnzahlFaelle7Tage"] / bez["AnzEinwohner"] * 100_000
+    return bez
 
 
 def enrich_bez(bez_orig, fs):
@@ -873,7 +863,7 @@ kfz = None
 
 
 def bezname_to_kfz(bezname: str) -> str:
-    global kfz  # pylint:disable=global-statement
+    global kfz  # noqa: PLW0603
     if kfz is None:
         kfz = pd.read_csv(
             "kennzeichen_at.csv",
@@ -1449,7 +1439,9 @@ def plot_detail_ax(faelle: pd.DataFrame, ax: plt.Axes):
     # ax.legend(loc="upper left", prop=props)
     # ax2.legend(loc="lower right", bbox_to_anchor=(0.77, 0), prop=props)
     # fig.legend(loc="upper left", props=props, ncols=2)
-    legend_info = [x1 + x2 for x1, x2 in zip(ax.get_legend_handles_labels(), ax2.get_legend_handles_labels())]
+    legend_info = [
+        x1 + x2 for x1, x2 in zip(ax.get_legend_handles_labels(), ax2.get_legend_handles_labels(), strict=True)
+    ]
     ax2.legend(
         *legend_info,
         loc="upper center",
@@ -1483,6 +1475,7 @@ def plot_detail(faelle: pd.DataFrame, figname: str):
     fig, ax = plt.subplots(figsize=(16 * 0.7, 9 * 0.7))
     plot_detail_ax(faelle, ax)
     fig.autofmt_xdate(which="major")
+    fig.suptitle(figname)
     fig.tight_layout()
     return fig
 
@@ -1594,9 +1587,9 @@ def main():
 
     if not args.only_predict:
         sns.set_style("whitegrid", {"axes.grid": False, "legend.fontsize": 8})
-        df = load_bezirke()
-        enrich_inz(df)
-        bez_recent = df[df["Datum"] >= pd.to_datetime(datetime.now(tz_vie).date() - timedelta(45))]
+        bez = load_bezirke()
+        enrich_inz(bez)
+        bez_recent = bez[bez["Datum"] >= pd.to_datetime(datetime.now(tz_vie).date() - timedelta(45))]
         bez_today = filterlatest(bez_recent)
         top = bez_today.sort_values(by="inz", ascending=False).iloc[:8]["Bezirk"]
         render_bez(bez_recent, top, "Hochinzidenz").savefig("df-top.png")
@@ -1606,11 +1599,11 @@ def main():
         render_bez(bez_recent, bez_of_interest, "Auswahl").savefig("df-selected.png")
 
         plot_detail(
-            df.query("Bezirk == 'Wels(Stadt)'").set_index("Datum"),
+            bez.query("Bezirk == 'Wels(Stadt)'").set_index("Datum"),
             "Steigerungsrate Wels",
         ).savefig("wels-detail.png")
         plot_detail(
-            df.query("Bezirk == 'Imst'").set_index("Datum"),
+            bez.query("Bezirk == 'Imst'").set_index("Datum"),
             "Steigerungsrate Imst",
         ).savefig("imst-detail.png")
 
@@ -1664,7 +1657,7 @@ def main():
     )
 
     ax: plt.Axes
-    for idx, bundesland, ax in zip(range(9), BUNDESLAND_BY_ID.values(), axs.flat):
+    for idx, bundesland, ax in zip(range(9), BUNDESLAND_BY_ID.values(), axs.flat, strict=True):
         y = idx % 3
         ax.set_title(bundesland)
         ax2 = plot_detail_ax(faelle[faelle["Bundesland"] == bundesland], ax)
@@ -1806,19 +1799,19 @@ def plt_cat_dists(
     if False:
         display(plt_cumpct("Kumulative Inzidenz", data_agg, data_cat).figure)
 
-    def norm100agg(df):
-        df = df.copy()
-        df["AnzahlFaelleSumProEW"] = df["AnzahlFaelleSum"] / df["AnzahlFaelleSum"].iloc[-1]
-        return df
+    def norm100agg(faelle):
+        faelle = faelle.copy()
+        faelle["AnzahlFaelleSumProEW"] = faelle["AnzahlFaelleSum"] / faelle["AnzahlFaelleSum"].iloc[-1]
+        return faelle
 
-    def norm100(df):
-        df = df.copy()
-        for cat in df[catcol].unique():
-            mask = df[catcol] == cat
-            df.loc[mask, "AnzahlFaelleSumProEW"] = (
-                df.loc[mask, "AnzahlFaelleSum"] / df.loc[mask, "AnzahlFaelleSum"].iloc[-1]
+    def norm100(faelle):
+        faelle = faelle.copy()
+        for cat in faelle[catcol].unique():
+            mask = faelle[catcol] == cat
+            faelle.loc[mask, "AnzahlFaelleSumProEW"] = (
+                faelle.loc[mask, "AnzahlFaelleSum"] / faelle.loc[mask, "AnzahlFaelleSum"].iloc[-1]
             )
-        return df
+        return faelle
 
     if False:
         ax = plt_cumpct(

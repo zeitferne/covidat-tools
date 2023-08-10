@@ -106,3 +106,10 @@ default_file_extension = ".json"
     "https://data.statistik.gv.at/data/OGD_gest_kalwo_GEST_KALWOCHE_100.csv",
   ]
   dir = "statat-weekly-deaths"
+
+  [[dlsets]]
+  urls = [
+    "https://opendata.sozialversicherung.at/sari/SARI_Region_Krankenanstalt_v202307.csv?q=now",
+    "https://opendata.sozialversicherung.at/sari/SARI_Wohnregion_Patient_v202307.csv?q=now",
+  ]
+  dir = "sari"

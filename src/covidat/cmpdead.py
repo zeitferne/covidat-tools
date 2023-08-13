@@ -547,11 +547,7 @@ def join_tweets(tweets: Iterable[str]):
 
 def print_cmp_one(old: Openable, new: Openable):
     diff = to_diff(old, new)
-    print(
-        join_tweets(
-            format_dead_tweets(diff, silent_intraday=False) + format_weekstat_tweets(diff)
-        )
-    )
+    print(join_tweets(format_dead_tweets(diff, silent_intraday=False) + format_weekstat_tweets(diff)))
     print(flush=True)
 
 

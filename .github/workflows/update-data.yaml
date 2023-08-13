@@ -82,6 +82,7 @@ jobs:
                'data/covid/abwassermonitoring/*_latest.*' \
                'data/sozialversicherung-monatsberichte/Mb_*' \
                'data/statat-weekly-deaths/*_latest.*' \
+               'data/sari/*_latest.*' \
                ':^data/covid/abwassermonitoring/tirol/**'
           then
             echo "updated=1" >> "$GITHUB_OUTPUT"

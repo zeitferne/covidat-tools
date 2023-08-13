@@ -26,7 +26,7 @@ from zipfile import ZipFile
 from zoneinfo import ZoneInfo
 
 from .dlutil import dl_with_header_cache, get_moddate, write_hdr_file
-from .util import DATAROOT, DL_TSTAMP_FMT, LOG_FORMAT
+from .util import DATAROOT, DL_TSTAMP_FMT, LOG_FORMAT, parse_statat_date
 
 logger = logging.getLogger(__name__)
 
@@ -258,10 +258,6 @@ def medshort_updatedate(_resp: urllib.response.addinfourl, data: bytes) -> datet
     return datetime.strptime(tmatch.group(1).decode("utf-8"), "%Y-%m-%d %H:%M:%S").replace(
         tzinfo=ZoneInfo("Europe/Vienna")
     )
-
-
-def parse_statat_date(s: str) -> datetime:
-    return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC)
 
 
 # For OGD definition see https://go.gv.at/ogdframede

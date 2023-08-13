@@ -145,7 +145,7 @@ def dl_url(
                 logger.debug("Headers contain no relevant change, not storing them.")
 
         def simpname(fpath: Path):
-            return olddate or splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
+            return splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
 
         newpath, fext = fpath_from_resp(resp) if archive else (dldir / fname, fext)
         if archive and newpath.exists():

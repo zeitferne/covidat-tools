@@ -99,11 +99,12 @@ default_file_extension = ".json"
   dir = "basg-medicineshortage"
 
   [[dlsets]]
-  enable = false # Monatlich publiziert, manuell einschalten
-  urls = [
-    "https://data.statistik.gv.at/data/OGD_gest_kalwo_alter_GEST_KALWOCHE_5J_100.csv",
-    "https://data.statistik.gv.at/data/OGD_rate_kalwo_GEST_KALWOCHE_STR_100.csv",
-    "https://data.statistik.gv.at/data/OGD_gest_kalwo_GEST_KALWOCHE_100.csv",
+  tags = ["mtly_mort"]
+  source.kind = "statat"
+  source.urls = [
+    "https://data.statistik.gv.at/ogd/json?dataset=OGD_gest_kalwo_alter_GEST_KALWOCHE_5J_100",
+    "https://data.statistik.gv.at/ogd/json?dataset=OGD_rate_kalwo_GEST_KALWOCHE_STR_100",
+    "https://data.statistik.gv.at/ogd/json?dataset=OGD_gest_kalwo_GEST_KALWOCHE_100",
   ]
   dir = "statat-weekly-deaths"
 

@@ -3,6 +3,7 @@
 import argparse
 import csv
 import dataclasses
+import inspect
 import io
 import json
 import logging
@@ -44,7 +45,10 @@ def _register_fn(fn: TFn, registry: dict[str, TFn], prefix: str = ""):
     return fn
 
 
-DateExtractor = Callable[[urllib.response.addinfourl, bytes], datetime | None]
+DateExtractor = (
+    Callable[[urllib.response.addinfourl, bytes], datetime | None]
+    | Callable[[urllib.response.addinfourl], datetime | None]
+)
 _date_extractors: dict[str, DateExtractor] = {}
 
 
@@ -139,13 +143,26 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
             return typing.cast(Exception, resp)
         resp = typing.cast(urllib.response.addinfourl, resp)
 
-        data = resp.read()
+        if (
+            cfg.extract_date is not None
+            and sum(
+                a.default is inspect.Signature.empty
+                for a in inspect.signature(cfg.extract_date).parameters.values()
+            )
+            == 2
+        ):
+            data = resp.read()
+        else:
+            data = None
 
         def fpath_from_resp(resp) -> tuple[Path, str]:
             hdrs = resp.headers
             ts = None
             if cfg.extract_date is not None:
-                ts = cfg.extract_date(resp, data)
+                if data is None:
+                    ts = cfg.extract_date(resp)
+                else:
+                    ts = cfg.extract_date(resp, data)
             if ts is None:
                 ts = get_moddate(hdrs) or dlts
             dt_stamp = ts.strftime(DL_TSTAMP_FMT)
@@ -181,6 +198,9 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
 
         newdir = newpath.parent
         newdir.mkdir(parents=True, exist_ok=True)
+
+        if data is None:
+            data = resp.read()
 
         dlpath = newpath.with_suffix(newpath.suffix + ".tmp")
         with lzma.open(dlpath, "wb") if cfg.compress else open(dlpath, "wb") as of:
@@ -281,15 +301,18 @@ def extract_ogd_moddate(_resp: urllib.response.addinfourl, data: bytes) -> datet
     return parse_statat_date(mod_str)
 
 
-def dl_at_ogd_set(meta: dict[str, Any], dlcfg: DlCfg) -> None:
+def dl_at_ogd_set(meta: dict[str, Any], dlcfg: DlCfg, *, exclude_url: Callable[[str], bool]) -> None:
     resource: dict[str, Any]
     for resource in meta["resources"]:
+        if exclude_url(resource["url"]):
+            logger.debug("Excluded via URL filter: %s", resource["url"])
+            continue
         mdate_s = resource.get("last_modified")
         res_dlcfg = dlcfg
         if mdate_s:
             mdate = parse_statat_date(mdate_s)
 
-            def extract_date(_headers, _body, mdate=mdate):
+            def extract_date(_headers, mdate=mdate):
                 return mdate
 
             res_dlcfg = dataclasses.replace(res_dlcfg, extract_date=extract_date)
@@ -302,9 +325,17 @@ is_safe_fname = re.compile(fr"^[{_always_safe_rng}.]*[{_always_safe_rng}]$").ful
 
 @downloader_factory
 def download_statat(_kind: str, src_cfg: dict[str, Any]) -> Downloader:
+    src_cfg = src_cfg.copy()
     urls = typing.cast(list[str], src_cfg.pop("urls"))
     if not urls:
         raise ValueError("Missing source urls for statat downloader")
+    exclude_url_regex = src_cfg.pop("exclude_url_regex", None)
+    if exclude_url_regex:
+        exclude_url = re.compile(exclude_url_regex).search
+    else:
+        exclude_url = lambda _url: False
+    if src_cfg:
+        raise ValueError("Unknown keys in statat config: " + ", ".join(map(repr, src_cfg.keys())))
 
     def do_download_stat(dlcfg: DlCfg) -> None:
         for url in urls:
@@ -314,13 +345,13 @@ def download_statat(_kind: str, src_cfg: dict[str, Any]) -> Downloader:
                 dset = None
             res = dl_url(
                 url,
-                dataclasses.replace(dlcfg, extract_date=extract_ogd_moddate, fname_format=dset or "{}"),
+                dataclasses.replace(dlcfg, extract_date=extract_ogd_moddate, fname_format=dset + "_{}" or "{}"),
                 autocommit=False,
             )
             if not isinstance(res, tuple):
                 continue
             meta_bytes, commit = res
-            dl_at_ogd_set(json.loads(meta_bytes), dlcfg)
+            dl_at_ogd_set(json.loads(meta_bytes), dlcfg, exclude_url=exclude_url)
             commit()
 
     return do_download_stat

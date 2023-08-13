@@ -106,6 +106,7 @@ default_file_extension = ".json"
     "https://data.statistik.gv.at/ogd/json?dataset=OGD_rate_kalwo_GEST_KALWOCHE_STR_100",
     "https://data.statistik.gv.at/ogd/json?dataset=OGD_gest_kalwo_GEST_KALWOCHE_100",
   ]
+  source.exclude_url_regex = 'C-KALWOCHE-0'
   dir = "statat-weekly-deaths"
 
   [[dlsets]]

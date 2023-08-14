@@ -215,7 +215,7 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
 
         n_params_with_body = 2
         if (
-            cfg.extract_date is not None
+            callable(cfg.extract_date)
             and sum(
                 a.default is inspect.Signature.empty for a in inspect.signature(cfg.extract_date).parameters.values()
             )
@@ -367,11 +367,7 @@ def dl_at_ogd_set(meta: dict[str, Any], dlcfg: DlCfg, *, exclude_url: Callable[[
         res_dlcfg = dlcfg
         if mdate_s:
             mdate = parse_statat_date(mdate_s)
-
-            def extract_date(_headers, mdate=mdate):
-                return mdate
-
-            res_dlcfg = dataclasses.replace(res_dlcfg, extract_date=extract_date)
+            res_dlcfg = dataclasses.replace(res_dlcfg, extract_date=mdate)
         dl_url(resource["url"], res_dlcfg)
 
 

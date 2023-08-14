@@ -3,6 +3,7 @@
 import argparse
 import csv
 import dataclasses
+import html
 import inspect
 import io
 import json
@@ -20,13 +21,14 @@ from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from itertools import chain
 from os.path import basename
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import Any, TypeVar
 from urllib.parse import parse_qs, urlparse
+from urllib.request import urlopen
 from zipfile import ZipFile
 from zoneinfo import ZoneInfo
 
-from .dlutil import dl_with_header_cache, get_moddate, write_hdr_file
+from .dlutil import create_request, dl_with_header_cache, get_moddate, write_hdr_file
 from .util import DATAROOT, DL_TSTAMP_FMT, LOG_FORMAT, parse_statat_date
 
 logger = logging.getLogger(__name__)
@@ -62,7 +64,9 @@ class DlCfg:
     default_file_extension: str | None = None
     fname_format: str = "{}"
     sortdir_fmt: str = ""
-    extract_date: DateExtractor | None = None
+    extract_date: DateExtractor | datetime | None = None
+    use_disposition_fname: bool = False
+    fname_re_sub: tuple[re.Pattern, str] | None = None
 
 
 def date_extractor(fn: DateExtractor):
@@ -118,15 +122,81 @@ def splitbasestem(fname: os.PathLike | str) -> tuple[str, str]:
     return fname[0] + stem, sep + ext
 
 
-def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes, Callable[[], None]] | None:
-    fname = PurePosixPath(urlparse(url).path).name
+def get_dl_base_fname(url: str, cfg: DlCfg) -> tuple[str, str]:
+    urlparts = urlparse(url)
+    fname = PurePosixPath(urlparts.path).name
     fstem, fext = splitbasestem(fname)
-    fext = fext or cfg.default_file_extension
+    if not fstem or fstem in ("cdscontent", "load"):
+        qparts = parse_qs(urlparts.query)
+        cid = qparts.get("contentid")
+        if cid and len(cid) == 1:
+            fstem += cid[0]
+
+    fext = fext or cfg.default_file_extension or ""
     fstem = cfg.fname_format.format(fstem)
     if not is_safe_fname(fstem) and not is_safe_fname(fname):
         raise ValueError("Unsafe filename rejected in: " + url)
+    return fstem, fext
+
+
+def dlpath_from_date(fstem: str, fext: str, ts: datetime | None, cfg: DlCfg) -> Path:
+    if cfg.compress:
+        fext += ".xz"
+    newdir = cfg.dldir
+    if ts is None:
+        assert not cfg.sortdir_fmt
+        dt_stamp = ""
+    else:
+        dt_stamp = "_" + ts.strftime(DL_TSTAMP_FMT)
+        if cfg.sortdir_fmt:
+            newdir /= ts.strftime(cfg.sortdir_fmt)
+    return newdir / f"{fstem}{dt_stamp}{fext}", fext
+
+
+def dlpath_from_resp(
+    fstem: str, fext: str, data: bytes | None, resp: urllib.response.addinfourl, cfg: DlCfg
+) -> tuple[Path, str]:
+    hdrs = resp.headers
+    hdr_fname = hdrs.get_filename()
+    if hdr_fname:
+        if cfg.fname_re_sub:
+            new_fname = cfg.fname_re_sub[0].sub(cfg.fname_re_sub[1], hdr_fname)
+            if new_fname != hdr_fname:
+                logger.debug("Replaced %r with %r", hdr_fname, new_fname)
+                hdr_fname = new_fname
+        safe = is_safe_fname(hdr_fname)
+        if not safe:
+            if cfg.use_disposition_fname:
+                raise ValueError(f"Configuration requests use of unsafe disposition filename: {hdr_fname}")
+            hdr_fname = None
+    if hdr_fname:
+        hdr_stem, hdr_ext = splitbasestem(hdr_fname)
+        if cfg.use_disposition_fname:
+            fstem, fext = hdr_stem or fstem, hdr_ext or fext
+    else:
+        hdr_ext = ""
+    fext_real = fext or hdr_ext or mimetypes.guess_extension(hdrs.get_content_type()) or ""
+    ts = (
+        None
+        if not cfg.archive
+        else get_moddate(hdrs) or datetime.now(UTC)
+        if cfg.extract_date is None
+        else cfg.extract_date
+        if isinstance(cfg.extract_date, datetime)
+        else cfg.extract_date(resp)
+        if data is None
+        else cfg.extract_date(resp, data)
+    )
+    return dlpath_from_date(fstem, fext_real, ts, cfg)
+
+
+def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes, Callable[[], None]] | None:
+    if cfg.extract_date is not None and not cfg.archive:
+        raise ValueError("extract_date is not None despite not archive")
+    if cfg.archive_headers and not cfg.archive:
+        raise ValueError("archive_headers despite not archive")
+    fstem, fext = get_dl_base_fname(url, cfg)
     hdrfilepath = cfg.dldir / (fstem + "_lasthdr.txt")
-    dlts = datetime.now(UTC)
     resp = None
     newpath = None
     try:
@@ -143,36 +213,17 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
             return typing.cast(Exception, resp)
         resp = typing.cast(urllib.response.addinfourl, resp)
 
+        n_params_with_body = 2
         if (
             cfg.extract_date is not None
             and sum(
-                a.default is inspect.Signature.empty
-                for a in inspect.signature(cfg.extract_date).parameters.values()
+                a.default is inspect.Signature.empty for a in inspect.signature(cfg.extract_date).parameters.values()
             )
-            == 2
+            == n_params_with_body
         ):
             data = resp.read()
         else:
             data = None
-
-        def fpath_from_resp(resp) -> tuple[Path, str]:
-            hdrs = resp.headers
-            ts = None
-            if cfg.extract_date is not None:
-                if data is None:
-                    ts = cfg.extract_date(resp)
-                else:
-                    ts = cfg.extract_date(resp, data)
-            if ts is None:
-                ts = get_moddate(hdrs) or dlts
-            dt_stamp = ts.strftime(DL_TSTAMP_FMT)
-            fext_real = fext or mimetypes.guess_extension(hdrs.get_content_type()) or ""
-            if cfg.compress:
-                fext_real += ".xz"
-            newdir = cfg.dldir
-            if cfg.sortdir_fmt:
-                newdir /= ts.strftime(cfg.sortdir_fmt)
-            return newdir / f"{fstem}_{dt_stamp}{fext_real}", fext_real
 
         def commit_headers():
             write_hdr_file(resp.headers, hdrfilepath, allow_existing=True)
@@ -190,7 +241,7 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
         def simpname(fpath: Path):
             return splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
 
-        newpath, fext = fpath_from_resp(resp) if cfg.archive else (cfg.dldir / fname, fext)
+        newpath, fext = dlpath_from_resp(fstem, fext, data, resp, cfg)
         if cfg.archive and newpath.exists():
             logger.info("Same modification date: %s (Kept: %s)", url, simpname(newpath))
             maybe_commit_headers()
@@ -202,26 +253,24 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
         if data is None:
             data = resp.read()
 
-        dlpath = newpath.with_suffix(newpath.suffix + ".tmp")
-        with lzma.open(dlpath, "wb") if cfg.compress else open(dlpath, "wb") as of:
-            of.write(data)
+        dlpath = write_data_tmp(newpath, data, cfg)
 
-        linkpath = cfg.dldir / f"{fstem}_latest{fext}"
+        linkpath = cfg.dldir / f"{fstem}_latest{fext}" if cfg.archive else newpath
+        if linkpath.exists() and cmp_files(
+            linkpath,
+            dlpath,
+            bytearray(io.DEFAULT_BUFFER_SIZE),
+            bytearray(io.DEFAULT_BUFFER_SIZE),
+        ):
+            logger.info(
+                "Same file content: %s (Kept: %s)",
+                url,
+                simpname(linkpath.readlink()) if cfg.archive else (olddate or "?"),
+            )
+            dlpath.unlink()
+            maybe_commit_headers()
+            return None
         if cfg.archive:
-            if linkpath.exists() and cmp_files(
-                linkpath,
-                dlpath,
-                bytearray(io.DEFAULT_BUFFER_SIZE),
-                bytearray(io.DEFAULT_BUFFER_SIZE),
-            ):
-                logger.info(
-                    "Same file content: %s (Kept: %s)",
-                    url,
-                    simpname(linkpath.readlink()),
-                )
-                dlpath.unlink()
-                maybe_commit_headers()
-                return None
             if newpath.exists():
                 raise FileExistsError("Target exists but has different content:" + str(newpath))
             dlpath.rename(newpath)
@@ -229,12 +278,7 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
             dlpath.replace(newpath)
         if cfg.archive_headers:
             write_hdr_file(resp.headers, newdir / (newpath.stem + "_hdr.txt"), allow_existing=False)
-        relpath = newpath.relative_to(DATAROOT)
-        logger.info(
-            "Dowloaded %s %s",
-            url,
-            newpath if len(str(newpath)) <= len(str(relpath)) else relpath,
-        )
+        log_download(url, newpath)
         if cfg.archive:
             linkdst = newpath.relative_to(linkpath.parent)
             linkpath.unlink(missing_ok=True)
@@ -253,6 +297,18 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
         if resp is not None:
             resp.close()
     return data, commit_headers
+
+
+def log_download(url: str, newpath: PurePath):
+    relpath = newpath.relative_to(DATAROOT)
+    logger.info("Downloaded %s %s", url, newpath if len(str(newpath)) <= len(str(relpath)) else relpath)
+
+
+def write_data_tmp(newpath: Path, data: bytes, cfg: DlCfg) -> Path:
+    dlpath = newpath.with_suffix(newpath.suffix + ".tmp")
+    with lzma.open(dlpath, "wb") if cfg.compress else open(dlpath, "wb") as of:
+        of.write(data)
+    return dlpath
 
 
 @date_extractor
@@ -319,8 +375,11 @@ def dl_at_ogd_set(meta: dict[str, Any], dlcfg: DlCfg, *, exclude_url: Callable[[
         dl_url(resource["url"], res_dlcfg)
 
 
-_always_safe_rng = "-A-Za-z0-9_öÖäÄüÜß+()=!,;"  # Never safe: ?/\
-is_safe_fname = re.compile(fr"^[{_always_safe_rng}.]*[{_always_safe_rng}]$").fullmatch
+_conservative_save_rng = "A-Za-z0-9"
+_always_safe_rng = f"-{_conservative_save_rng}_öÖäÄüÜß+()=!,;"  # Never safe: ?/\
+# Careful with dots. We need to allow them (almost every filename contains them),
+# but they must not occur more than once in sequence
+is_safe_fname = re.compile(fr"^(?:\.?[{_always_safe_rng}])*\.?[{_conservative_save_rng}]$").fullmatch
 
 
 @downloader_factory
@@ -328,12 +387,9 @@ def download_statat(_kind: str, src_cfg: dict[str, Any]) -> Downloader:
     src_cfg = src_cfg.copy()
     urls = typing.cast(list[str], src_cfg.pop("urls"))
     if not urls:
-        raise ValueError("Missing source urls for statat downloader")
+        raise ValueError("Empty source urls for statat downloader")
     exclude_url_regex = src_cfg.pop("exclude_url_regex", None)
-    if exclude_url_regex:
-        exclude_url = re.compile(exclude_url_regex).search
-    else:
-        exclude_url = lambda _url: False
+    exclude_url = re.compile(exclude_url_regex).search if exclude_url_regex else lambda _url: False
     if src_cfg:
         raise ValueError("Unknown keys in statat config: " + ", ".join(map(repr, src_cfg.keys())))
 
@@ -355,6 +411,82 @@ def download_statat(_kind: str, src_cfg: dict[str, Any]) -> Downloader:
             commit()
 
     return do_download_stat
+
+
+def download_unique_links_re(url: str, source_re: re.Pattern, dlcfg: DlCfg) -> None:
+    dlcfg = dataclasses.replace(dlcfg, archive=False, archive_headers=False)
+    request = create_request(url)
+    resp: urllib.response.addinfourl
+    if dlcfg.dry_run:
+        data = b""
+    else:
+        with urlopen(request) as resp:  # noqa: S310
+            data = resp.read()
+    urllistfilename = dlcfg.dldir / (".".join(p for p in get_dl_base_fname(url, dlcfg) if p) + "_urls.csv")
+    csv_cols = ("url", "name")
+    urllist: dict[str, str]
+    try:
+        with open(urllistfilename, newline="", encoding="utf-8") as urllistfile:
+            urllist = {r["url"]: r["name"] for r in csv.DictReader(urllistfile)}
+    except FileNotFoundError:
+        urllist = {}
+    newurllist: dict[str, str] = {}
+    text = data.decode("utf-8", errors="replace")
+    matches = 0
+    hits = 0
+    try:
+        for match in source_re.finditer(text):
+            matches += 1
+            content_url = html.unescape(match.group(1))
+            urlname = urllist.get(content_url) or newurllist.get(content_url)
+            if urlname is not None:
+                logger.debug("Same URL: %s (%s)", content_url, urlname)
+                newurllist[content_url] = urlname
+                continue
+            hits += 1
+            with urlopen(create_request(content_url)) as resp:  # noqa: S310
+                data = resp.read()
+            fstem, fext = get_dl_base_fname(content_url, dlcfg)
+            newpath = dlpath_from_resp(fstem, fext, data, resp, dlcfg)[0]
+            dlpath = write_data_tmp(newpath, data, dlcfg)
+            if newpath.exists():
+                raise FileExistsError(f"URL {content_url} not in list but {newpath} exists already")
+            dlpath.rename(newpath)
+            newurllist[content_url] = newpath.name
+            log_download(content_url, newpath)
+    except:
+        newurllist = urllist | newurllist
+        raise
+    finally:
+        # TODO: This is still not safe against crashes/poweroffs. We'll be left with
+        # inconsistent data that will block us from donwloading anything
+        with io.StringIO() if dlcfg.dry_run else open(
+            urllistfilename, "w", newline="", encoding="utf-8"
+        ) as urllistfile:
+            urlwriter = csv.DictWriter(urllistfile, csv_cols)
+            urlwriter.writeheader()
+            urlwriter.writerows({"url": k, "name": v} for k, v in newurllist.items())
+    logger.log(logging.INFO if matches else logging.WARNING, "%s: %d/%d new URLs", url, hits, matches)
+
+
+@downloader_factory
+def scan_unique_links_re(kind: str, src_cfg: dict[str, Any]) -> Downloader:
+    # TODO Factor out common config parsing, see download_statat
+    src_cfg = src_cfg.copy()
+    urls = typing.cast(list[str], src_cfg.pop("urls"))
+    if not urls:
+        raise ValueError(f"Empty source urls for {kind} downloader")
+    source_re = re.compile(src_cfg.pop("regex"))
+    if source_re.groups < 1:
+        raise ValueError("No capturing groups in source regex:" + source_re.pattern)
+    if src_cfg:
+        raise ValueError(f"Unknown keys in {kind} config: " + ", ".join(map(repr, src_cfg.keys())))
+
+    def download_unique_links_re_all(dlcfg: DlCfg) -> None:
+        for url in urls:
+            download_unique_links_re(url, source_re, dlcfg)
+
+    return download_unique_links_re_all
 
 
 def parse_source_cfg(dlsource: dict[str, Any]) -> Downloader:
@@ -402,6 +534,7 @@ def execute_dlset(
         "compress",
         "default_file_extension",
         "fname_format",
+        "use_disposition_fname",
     ):
         v = dlset.pop(k, None)
         if v is not None:
@@ -410,6 +543,13 @@ def execute_dlset(
     extract_date = dlset.pop("extract_date", None)
     if extract_date is not None:
         params["extract_date"] = _date_extractors[extract_date]
+
+    fname_re_sub = dlset.pop("fname_re_sub", None)
+    if fname_re_sub is not None:
+        re_sub_param_cnt = 2
+        if not isinstance(fname_re_sub, list) or len(fname_re_sub) != re_sub_param_cnt:
+            raise ValueError("Bad value for fname_re_sub: " + repr(fname_re_sub))
+        params["fname_re_sub"] = (re.compile(fname_re_sub[0]), fname_re_sub[1])
 
     enable = dlset.pop("enable", not only_enabled)
     tags = dlset.pop("tags", ()) or ("UNTAGGED",)
@@ -439,9 +579,14 @@ def execute_config(
     dry_run: bool,
 ):
     for dlset in cfg["dlsets"]:
-        execute_dlset(
-            dlset, cfg, only_archivable=only_archivable, tag_map=tag_map, dry_run=dry_run, only_enabled=only_enabled
-        )
+        try:
+            execute_dlset(
+                dlset, cfg, only_archivable=only_archivable, tag_map=tag_map, dry_run=dry_run, only_enabled=only_enabled
+            )
+        except Exception:
+            logger.exception(
+                "Failed executing dlset (into %s): %s", dlset.get("dir"), dlset.get("urls") or dlset.get("source")
+            )
 
 
 def main() -> None:

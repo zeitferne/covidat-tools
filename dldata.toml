@@ -99,7 +99,7 @@ default_file_extension = ".json"
   dir = "basg-medicineshortage"
 
   [[dlsets]]
-  tags = ["mtly_mort"]
+  tags = ["mtly", "mtly_mort"]
   source.kind = "statat"
   source.urls = [
     "https://data.statistik.gv.at/ogd/json?dataset=OGD_gest_kalwo_alter_GEST_KALWOCHE_5J_100",
@@ -115,3 +115,16 @@ default_file_extension = ".json"
     "https://opendata.sozialversicherung.at/sari/SARI_Wohnregion_Patient_v202307.csv?q=now",
   ]
   dir = "sari"
+
+  [[dlsets]]
+  tags = ["mtly", "mtly_svat"]
+  source.kind = "scan_unique_links_re"
+  source.urls = [
+    # Website > Startseite > Fachinformationen > Zahlen / Daten / Fakten >
+    # Statistische Daten aus der SV > Statistische Daten aus der Sozialversicherung
+    "https://www.sozialversicherung.at/cdscontent/?contentid=10007.853001&portal=svportal"
+  ]
+  source.regex = '<a [^>]*\besvlink_excel\b[^>]*\bhref="([^"]+)"'
+  dir = "sozialversicherung-monatsberichte"
+  use_disposition_fname = true
+  fname_re_sub = ['^Kopie[_ -]von[_ -]', '']

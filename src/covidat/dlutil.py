@@ -50,12 +50,22 @@ def get_moddate(hdrs: Message) -> datetime | None:
     return parsedate_to_datetime(typing.cast(str, dt)) if dt else None
 
 
-def dl_if_not_modified(
-    url: str, lastheaders: Message | None, *, dry_run: bool
-) -> tuple[bool, HTTPError | urllib.response.addinfourl]:
+def create_request(url: str, headers: dict[str, str] | None = None) -> Request:
     reqheaders = {
         "From": FROM_EMAIL,
     }
+    if headers:
+        reqheaders.update(headers)
+    req = Request(url, headers=reqheaders)
+    if urlparse(req.full_url).scheme not in ("http", "https"):
+        raise ValueError("Unexpected scheme in URL: " + url)
+    return req
+
+
+def dl_if_not_modified(
+    url: str, lastheaders: Message | None, *, dry_run: bool
+) -> tuple[bool, HTTPError | urllib.response.addinfourl]:
+    reqheaders: dict[str, str] = {}
     if lastheaders:
         etag = lastheaders.get("Etag")
         if etag:
@@ -63,9 +73,7 @@ def dl_if_not_modified(
         mdate = lastheaders.get("Last-Modified")
         if mdate:
             reqheaders["If-Modified-Since"] = mdate
-    req = Request(url, headers=reqheaders)
-    if urlparse(req.full_url).scheme not in ("http", "https"):
-        raise ValueError("Unexpected scheme in URL: " + url)
+    req = create_request(url, reqheaders)
     if dry_run:
         return False, HTTPError(
             req.full_url,

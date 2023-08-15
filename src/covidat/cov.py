@@ -2141,7 +2141,7 @@ def load_bev() -> pd.DataFrame:
             .rename("AltersgruppeID"),
             result["Geschlecht"],
         ]
-        )["AnzEinwohner"].sum()
+    )["AnzEinwohner"].sum()
 
 
 def bev_to_daily(statbev: pd.DataFrame, minyear: int = 2020, maxyear: int | None = None) -> pd.DataFrame:

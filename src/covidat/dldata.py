@@ -4,7 +4,6 @@ import argparse
 import csv
 import dataclasses
 import html
-import inspect
 import io
 import json
 import logging
@@ -47,10 +46,7 @@ def _register_fn(fn: TFn, registry: dict[str, TFn], prefix: str = ""):
     return fn
 
 
-DateExtractor = (
-    Callable[[urllib.response.addinfourl, bytes], datetime | None]
-    | Callable[[urllib.response.addinfourl], datetime | None]
-)
+DateExtractor = Callable[[urllib.response.addinfourl, bytes], datetime | None]
 _date_extractors: dict[str, DateExtractor] = {}
 
 
@@ -153,41 +149,44 @@ def dlpath_from_date(fstem: str, fext: str, ts: datetime | None, cfg: DlCfg) -> 
     return newdir / f"{fstem}{dt_stamp}{fext}", fext
 
 
+def need_resp_for_filename(fext: str, cfg: DlCfg):
+    return not fext or cfg.use_disposition_fname or cfg.archive and not isinstance(cfg.extract_date, datetime)
+
+
 def dlpath_from_resp(
-    fstem: str, fext: str, data: bytes | None, resp: urllib.response.addinfourl, cfg: DlCfg
+    fstem: str, fext: str, data: bytes | None, resp: urllib.response.addinfourl | None, cfg: DlCfg
 ) -> tuple[Path, str]:
-    hdrs = resp.headers
-    hdr_fname = hdrs.get_filename()
-    if hdr_fname:
-        if cfg.fname_re_sub:
-            new_fname = cfg.fname_re_sub[0].sub(cfg.fname_re_sub[1], hdr_fname)
-            if new_fname != hdr_fname:
-                logger.debug("Replaced %r with %r", hdr_fname, new_fname)
-                hdr_fname = new_fname
-        safe = is_safe_fname(hdr_fname)
-        if not safe:
+    if not fext or cfg.use_disposition_fname:
+        assert need_resp_for_filename(fext, cfg)
+        hdr_fname = resp.headers.get_filename()
+        if hdr_fname:
+            if cfg.fname_re_sub:
+                new_fname = cfg.fname_re_sub[0].sub(cfg.fname_re_sub[1], hdr_fname)
+                if new_fname != hdr_fname:
+                    logger.debug("Replaced %r with %r", hdr_fname, new_fname)
+                    hdr_fname = new_fname
+            safe = is_safe_fname(hdr_fname)
+            if not safe:
+                if cfg.use_disposition_fname:
+                    raise ValueError(f"Configuration requests use of unsafe disposition filename: {hdr_fname}")
+                hdr_fname = None
+        if hdr_fname:
+            hdr_stem, hdr_ext = splitbasestem(hdr_fname)
             if cfg.use_disposition_fname:
-                raise ValueError(f"Configuration requests use of unsafe disposition filename: {hdr_fname}")
-            hdr_fname = None
-    if hdr_fname:
-        hdr_stem, hdr_ext = splitbasestem(hdr_fname)
-        if cfg.use_disposition_fname:
-            fstem, fext = hdr_stem or fstem, hdr_ext or fext
-    else:
-        hdr_ext = ""
-    fext_real = fext or hdr_ext or mimetypes.guess_extension(hdrs.get_content_type()) or ""
+                fstem, fext = hdr_stem or fstem, hdr_ext or fext
+        else:
+            hdr_ext = ""
+        fext = fext or hdr_ext or mimetypes.guess_extension(resp.headers.get_content_type()) or ""
     ts = (
         None
         if not cfg.archive
-        else get_moddate(hdrs) or datetime.now(UTC)
+        else get_moddate(resp.headers) or datetime.now(UTC)
         if cfg.extract_date is None
         else cfg.extract_date
         if isinstance(cfg.extract_date, datetime)
-        else cfg.extract_date(resp)
-        if data is None
         else cfg.extract_date(resp, data)
     )
-    return dlpath_from_date(fstem, fext_real, ts, cfg)
+    return dlpath_from_date(fstem, fext, ts, cfg)
 
 
 def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes, Callable[[], None]] | None:
@@ -198,7 +197,17 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
     fstem, fext = get_dl_base_fname(url, cfg)
     hdrfilepath = cfg.dldir / (fstem + "_lasthdr.txt")
     resp = None
-    newpath = None
+
+    def simpname(fpath: Path):
+        return splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
+
+    if need_resp_for_filename(fext, cfg):
+        newpath = None
+    else:
+        newpath, fext = dlpath_from_resp(fstem, fext, None, None, cfg)
+        if cfg.archive and newpath.exists():
+            logger.info("Same date (cached): %s (Kept: %s)", url, simpname(newpath))
+            return None
     try:
         ok, resp, oldheaders = dl_with_header_cache(url, hdrfilepath, dry_run=cfg.dry_run)
         olddate_raw = get_moddate(oldheaders) if oldheaders else None
@@ -213,17 +222,7 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
             return typing.cast(Exception, resp)
         resp = typing.cast(urllib.response.addinfourl, resp)
 
-        n_params_with_body = 2
-        if (
-            callable(cfg.extract_date)
-            and sum(
-                a.default is inspect.Signature.empty for a in inspect.signature(cfg.extract_date).parameters.values()
-            )
-            == n_params_with_body
-        ):
-            data = resp.read()
-        else:
-            data = None
+        data = resp.read()
 
         def commit_headers():
             write_hdr_file(resp.headers, hdrfilepath, allow_existing=True)
@@ -238,9 +237,6 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
             else:
                 logger.debug("Headers contain no relevant change, not storing them.")
 
-        def simpname(fpath: Path):
-            return splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
-
         newpath, fext = dlpath_from_resp(fstem, fext, data, resp, cfg)
         if cfg.archive and newpath.exists():
             logger.info("Same modification date: %s (Kept: %s)", url, simpname(newpath))
@@ -249,9 +245,6 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
 
         newdir = newpath.parent
         newdir.mkdir(parents=True, exist_ok=True)
-
-        if data is None:
-            data = resp.read()
 
         dlpath = write_data_tmp(newpath, data, cfg)
 

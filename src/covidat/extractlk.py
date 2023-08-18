@@ -81,7 +81,7 @@ zu versorgenden Patientinnen (?:und|bzw\.) Patienten sind (?P<ricu>[0-9,.]+ Proz
 print(HOSP_WEEKLY_RE.pattern)
 
 
-def processfile(fname: Path, ofile: csv.DictWriter[str], deathfile: _writer) -> None:
+def processfile(fname: Path, ofile: "csv.DictWriter[str]", deathfile: "_writer") -> None:
     with open(fname, encoding="utf-8") as f:
         text = f.read()
     processtext(text, fname, ofile, deathfile)
@@ -221,7 +221,7 @@ def findts(text: str, fname: Path) -> datetime | None:
     return ttl_ts
 
 
-def processtext(text: str, fname: Path, ofile: csv.DictWriter[str], deathfile: _writer) -> None:
+def processtext(text: str, fname: Path, ofile: "csv.DictWriter[str]", deathfile: "_writer") -> None:
     ts = findts(text, fname)
     if ts is None:
         # print("Skipping", fname.name, m.group(1), "no timestamp")
@@ -338,7 +338,7 @@ DEL_RE = re.compile(
 DEATH_START_RE = re.compile("Aktuelle Tode|Todesfälle im Zusammenhang mit C", re.IGNORECASE)
 
 
-def extractdeaths(ts: date, name: str, rtext: str, deathfile: _writer) -> None:
+def extractdeaths(ts: date, name: str, rtext: str, deathfile: "_writer") -> None:
     if name == "245261.htm":
         rtext = rtext.replace("26.11. Salzkammergut", "26.11. (Salzkammergut")
     elif name == "245594.htm":

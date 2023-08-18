@@ -55,7 +55,7 @@ def collectshortage(dirname: util.Openable, outname: util.Openable) -> None:
                 raise ValueError(f"Error in {fname}: {e}") from e
 
 
-def norm_name(name: pd.Series[str]) -> pd.Series[str]:
+def norm_name(name: "pd.Series[str]") -> "pd.Series[str]":
     return (
         name.replace(r"\b(\d|,)+\b", "0", regex=True)
         .replace(r"\b\d+([mg])", r"0 \1", regex=True)
@@ -88,7 +88,7 @@ def load_azr() -> pd.DataFrame:
     return pd.concat([azr, azr0, azr_m]).reset_index(drop=True)
 
 
-def agg_status(s: pd.Series[str]) -> str:
+def agg_status(s: "pd.Series[str]") -> str:
     return (
         "verfügbar"
         if (s == "verfügbar").all()
@@ -147,7 +147,7 @@ def load_veasp_xml(fname: util.Openable, azr: pd.DataFrame, *, only_statagg: boo
         }
         if not only_statagg:
 
-            def to_dt(s: pd.Series[str]) -> pd.Series[pd.Timestamp]:
+            def to_dt(s: "pd.Series[str]") -> "pd.Series[pd.Timestamp]":
                 return pd.to_datetime(s, format="%Y-%m-%d")
 
             veasp.loc[veasp["Status"] == "verfügbar", "Datum_voraussichtliche_Wiederbelieferung"] = None
@@ -166,7 +166,7 @@ def load_veasp_xml(fname: util.Openable, azr: pd.DataFrame, *, only_statagg: boo
         raise ValueError(f"{fname}: Bad status: {veasp['Status'].unique()}") from None
 
 
-def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter[str]) -> None:
+def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: "csv.DictWriter[str]") -> None:
     fdate = datetime.strptime(fname.stem.split("_", 1)[1].split(".", 1)[0], "%Y%m%d_%H%M%S").replace(tzinfo=UTC).date()
     if fdate in dts:
         return

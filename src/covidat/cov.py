@@ -171,9 +171,11 @@ ARCHIVE_PATCH_ROOT = COLLECTROOT / "covid/ages_all"
 DATE_FMT = "%Y%m%d"
 
 
-def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, *, ndays, logview, rwidth, sharey, color=None):
+def plt_mdiff1(
+    ax, fs_oo, ages_old_oo, vcol, *, ndays, logview, rwidth, sharey, color=None, weekly=False, multiday=None
+):
     newseries = fs_oo[vcol].rolling(rwidth).sum()
-    if rwidth == 1:
+    if rwidth == 1 and not weekly:
         avgseries = fs_oo[vcol].rolling(7).mean()
     if ndays is not None:
         newseries = newseries.iloc[-ndays:]
@@ -194,7 +196,8 @@ def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, *, ndays, logview, rwidth, sharey, 
     if not logview:
         diffseries = newseries.sub(oldseries, fill_value=0)
         # display(fs_oo.iloc[0]["Bundesland"], diffseries.tail(3), newseries.tail(3))
-    multiday = (fs_oo.index[-1] - ages_old_oo.index[-1]).days > 1
+    if multiday is None:
+        multiday = (fs_oo.index[-1] - ages_old_oo.index[-1]).days > 1
     if multiday:
         ax.axvspan(
             ages_old_oo.index[-1] + timedelta(0.5),
@@ -234,7 +237,8 @@ def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, *, ndays, logview, rwidth, sharey, 
                 labels=[oldstamp, newlabel, minuslabel],
             )
         else:
-            ax.bar(oldseries.index, oldseries, color=color or "k", lw=0, label=oldstamp)
+            width = 6 if weekly else None
+            ax.bar(oldseries.index, oldseries, color=color or "k", lw=0, label=oldstamp, width=width)
             ax.bar(
                 newseries.index,
                 newseries.sub(oldseries, fill_value=0).where(newseries > oldseries),
@@ -242,6 +246,7 @@ def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, *, ndays, logview, rwidth, sharey, 
                 color=(1, 0, 0),
                 lw=0,
                 label=newlabel,
+                width=width,
             )
             ax.bar(
                 newseries.index,
@@ -250,10 +255,12 @@ def plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, *, ndays, logview, rwidth, sharey, 
                 color="skyblue",
                 lw=0,
                 label=minuslabel,
+                width=width,
             )
             if not sharey:
                 ax.set_ylim(top=max(oldseries.max(), newseries.max()) * 1.05)
-            ax.plot(avgseries.iloc[-ndays - 1 :], ls="--", color="lightgrey")
+            if not weekly:
+                ax.plot(avgseries.iloc[-ndays - 1 :], ls="--", color="lightgrey")
             # lastval = newseries.iloc[-1]
             # ax.annotate(
             #   format(lastval, ".0f"),
@@ -278,13 +285,16 @@ def plt_mdiff(
     rwidth=14,
     ndays=60,
     color=None,
+    weekly=False,
+    multiday=None,
 ):
     # sharey=True
-    fig, axs = plt.subplots(5, 2, figsize=(10, 10), sharex=True, sharey=sharey)
+    cats = fs[catcol].unique()
+    fig, axs = plt.subplots((len(cats) + 1) // 2, 2, figsize=(10, 10), sharex=True, sharey=sharey)
     # display(g.axes)
     # style=dict(lw=0.5, mew=0, marker=".", markersize=5)
     maxy = 0
-    for k, ax in zip(fs[catcol].unique(), axs.flat, strict=True):
+    for k, ax in zip(cats, axs.flat, strict=False):
         # print(k)
         fs_oo = fs[fs[catcol] == k].set_index("Datum")
         maxy_oo = fs_oo[vcol].iloc[-ndays:].rolling(rwidth).sum().max()
@@ -309,17 +319,36 @@ def plt_mdiff(
             if maxy_oo >= 10_000:
                 ax.tick_params(axis="y", labelsize="x-small" if maxy_oo >= 100_000 else "small")
         ages_old_oo = ages_old[ages_old[catcol] == k].set_index("Datum")
-        diffsum = fs_oo[vcol + "Sum"].iloc[-1] - ages_old_oo[vcol + "Sum"].iloc[-1]
+        if (vcol + "Sum") in fs_oo:
+            diffsum = fs_oo[vcol + "Sum"].iloc[-1] - ages_old_oo[vcol + "Sum"].iloc[-1]
+        else:
+            diffsum = fs_oo[vcol].sum() - ages_old_oo[vcol].sum()
         ax.set_title(f"{k} ({diffsum:+n})", y=0.94)
-        plt_mdiff1(ax, fs_oo, ages_old_oo, vcol, ndays, logview, rwidth, sharey, color=color)
+        plt_mdiff1(
+            ax,
+            fs_oo,
+            ages_old_oo,
+            vcol,
+            ndays=ndays,
+            logview=logview,
+            rwidth=rwidth,
+            sharey=sharey,
+            color=color,
+            weekly=weekly,
+            multiday=multiday,
+        )
         maxy = max(fs_oo[vcol].iloc[-ndays:].rolling(rwidth).sum().max(), maxy)
         if ax in axs[-1]:
+            idx = fs_oo.index if not ndays else fs_oo.index[-ndays:]
+            ndays_real = idx.max() - idx.min()
             set_date_opts(
                 ax,
-                fs_oo.index if not ndays else fs_oo.index[-ndays:],
-                showyear=ndays > 180,
+                None if weekly else idx,
+                showyear=ndays_real > timedelta(180),
             )
-            if ndays > 350:
+            if weekly:
+                ax.set_xlim(idx.min() - timedelta(3), idx.max() + timedelta(6))
+            if ndays_real > timedelta(350):
                 ax.xaxis.set_major_locator(matplotlib.dates.MonthLocator(interval=2))
             # ax.set_xlim(left=pd.to_datetime("2021-05-01"), right=pd.to_datetime("2021-9-30"))
         # ax.set_ylim(top=2)
@@ -327,7 +356,7 @@ def plt_mdiff(
 
         if ax is axs.flat[0]:
             fig.legend(frameon=False, ncol=3, loc="upper center", bbox_to_anchor=(0.5, 0.93))
-    print(maxy, sharey)
+    # print(maxy, sharey)
     fig.subplots_adjust(wspace=0.03 if sharey else (0.11 if maxy >= 10_000 else 0.25))
     if ndays >= 90:
         fig.autofmt_xdate()

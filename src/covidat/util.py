@@ -15,3 +15,8 @@ LOG_FORMAT = "%(asctime)s:%(levelname)s:%(name)s: %(message)s"
 
 def parse_statat_date(s: str) -> datetime:
     return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC)
+
+
+def fdate_from_fname(s: Openable) -> datetime:
+    p = Path(s)
+    return datetime.strptime("_".join(p.stem.rsplit("_", 3)[-2:]), DL_TSTAMP_FMT).replace(tzinfo=UTC)

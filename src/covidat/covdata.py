@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .util import COLLECTROOT
+from .util import COLLECTROOT, DATAROOT, fdate_from_fname
 
 AGES_DATE_FMT = "%d.%m.%Y"
 HMS_TIME = "%H:%M:%S"
@@ -9,6 +9,11 @@ ISO_DATE_FMT = "%Y-%m-%d"
 ISO_SP_TIME_FMT = f"{ISO_DATE_FMT} {HMS_TIME}"
 ISO_TIME_FMT = f"{ISO_DATE_FMT}T{HMS_TIME}"
 ISO_TIME_TZ_FMT = f"{ISO_TIME_FMT}%z"
+
+
+def loadall_csv(fname_glob: str) -> pd.DataFrame:
+    frames = [pd.read_csv(p, sep=";").assign(FileDate=fdate_from_fname(p)) for p in sorted(DATAROOT.glob(fname_glob))]
+    return pd.concat(frames)
 
 
 def load_ww_blverlauf() -> pd.DataFrame:

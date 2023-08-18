@@ -10,7 +10,7 @@ from shutil import rmtree, which
 from subprocess import check_call
 
 
-def main():
+def main() -> None:
     parser = ArgumentParser()
     parser.add_argument("--sync-to-s3")
     parser.add_argument("--execute", action="store_true")
@@ -25,13 +25,13 @@ def main():
     else:
         raise ValueError("Repo root not found")
 
-    pdir = re.escape(str(pdir.parent).replace("\\", "/"))
-    if len(pdir) > 2 and pdir[1] == ":":  # noqa: PLR2004
-        pdir = f"(?:{pdir})|(?:{pdir[2:]})"
-    pdir = f"(?:{pdir})|(?:{re.escape(os.path.realpath(Path.home()))})"
-    pdir = f"(?:{pdir})|(?:{re.escape(str(Path.home()))})"
-    pdir = pdir.replace("/", r"[/\\]")
-    pdir_pat = re.compile(pdir.encode("utf-8"), re.IGNORECASE)
+    ppat = re.escape(str(pdir.parent).replace("\\", "/"))
+    if len(ppat) > 2 and ppat[1] == ":":  # noqa: PLR2004
+        ppat = f"(?:{ppat})|(?:{ppat[2:]})"
+    ppat = f"(?:{ppat})|(?:{re.escape(os.path.realpath(Path.home()))})"
+    ppat = f"(?:{ppat})|(?:{re.escape(str(Path.home()))})"
+    ppat = ppat.replace("/", r"[/\\]")
+    pdir_pat = re.compile(ppat.encode("utf-8"), re.IGNORECASE)
 
     output_dir = Path("gh-pages/export")
     if args.notebook is None and output_dir.exists():
@@ -43,8 +43,11 @@ def main():
     for nbfile in nbfiles:
         no_input = b"#@export: --no-input" in nbfile.read_bytes()[:16_000]
 
+        exe = which("jupyter")
+        if not exe:
+            raise ValueError("Could not find jupyter executable")
         exportargs = [
-            which("jupyter"),
+            exe,
             "nbconvert",
             "--to=html",
             "--ExtractOutputPreprocessor.enabled=true",

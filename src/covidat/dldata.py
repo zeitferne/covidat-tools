@@ -9,7 +9,6 @@ import json
 import logging
 import lzma
 import mimetypes
-import os
 import re
 import tomllib
 import typing
@@ -21,22 +20,22 @@ from http import HTTPStatus
 from itertools import chain
 from os.path import basename
 from pathlib import Path, PurePath, PurePosixPath
-from typing import Any, TypeVar
+from typing import Any, Never, TypeVar
 from urllib.parse import parse_qs, urlparse
 from urllib.request import urlopen
 from zipfile import ZipFile
 from zoneinfo import ZoneInfo
 
 from .dlutil import create_request, dl_with_header_cache, get_moddate, write_hdr_file
-from .util import DATAROOT, DL_TSTAMP_FMT, LOG_FORMAT, parse_statat_date
+from .util import DATAROOT, DL_TSTAMP_FMT, LOG_FORMAT, Openable, parse_statat_date
 
 logger = logging.getLogger(__name__)
 
 
-TFn = TypeVar("TFn", bound=Callable)
+TFn = TypeVar("TFn", bound=Callable[..., object])
 
 
-def _register_fn(fn: TFn, registry: dict[str, TFn], prefix: str = ""):
+def _register_fn(fn: TFn, registry: dict[str, TFn], prefix: str = "") -> TFn:
     name = fn.__name__
     if prefix:
         name = name.removeprefix(prefix)
@@ -62,10 +61,10 @@ class DlCfg:
     sortdir_fmt: str = ""
     extract_date: DateExtractor | datetime | None = None
     use_disposition_fname: bool = False
-    fname_re_sub: tuple[re.Pattern, str] | None = None
+    fname_re_sub: tuple[re.Pattern[str], str] | None = None
 
 
-def date_extractor(fn: DateExtractor):
+def date_extractor(fn: DateExtractor) -> DateExtractor:
     return _register_fn(fn, _date_extractors)
 
 
@@ -74,7 +73,7 @@ DownloaderFactory = Callable[[str, dict[str, Any]], Downloader]
 _dl_factories: dict[str, DownloaderFactory] = {}
 
 
-def downloader_factory(fn: DownloaderFactory):
+def downloader_factory(fn: DownloaderFactory) -> DownloaderFactory:
     return _register_fn(fn, _dl_factories, "download_")
 
 
@@ -95,9 +94,7 @@ def cmp_openfiles(
             return False
 
 
-def cmp_files(
-    p1: os.PathLike | str, p2: os.PathLike | str, buf1: bytearray | memoryview, buf2: bytearray | memoryview
-) -> bool:
+def cmp_files(p1: Openable, p2: Openable, buf1: bytearray | memoryview, buf2: bytearray | memoryview) -> bool:
     """Checks if files under paths p1, p2 are equal. buf1 and buf2 must be
     objects of same lenght supporting the buffer protocol, preferably
     memoryviews."""
@@ -107,7 +104,7 @@ def cmp_files(
         return cmp_openfiles(f1, f2, buf1, buf2)
 
 
-def splitbasestem(fname: os.PathLike | str) -> tuple[str, str]:
+def splitbasestem(fname: Openable) -> tuple[str, str]:
     fname = basename(fname)
     if not fname.lstrip("."):
         raise ValueError("Invalid file name for stemming: " + fname)
@@ -135,7 +132,7 @@ def get_dl_base_fname(url: str, cfg: DlCfg) -> tuple[str, str]:
     return fstem, fext
 
 
-def dlpath_from_date(fstem: str, fext: str, ts: datetime | None, cfg: DlCfg) -> Path:
+def dlpath_from_date(fstem: str, fext: str, ts: datetime | None, cfg: DlCfg) -> tuple[Path, str]:
     if cfg.compress:
         fext += ".xz"
     newdir = cfg.dldir
@@ -149,15 +146,20 @@ def dlpath_from_date(fstem: str, fext: str, ts: datetime | None, cfg: DlCfg) -> 
     return newdir / f"{fstem}{dt_stamp}{fext}", fext
 
 
-def need_resp_for_filename(fext: str, cfg: DlCfg):
+def need_resp_for_filename(fext: str, cfg: DlCfg) -> bool:
     return not fext or cfg.use_disposition_fname or cfg.archive and not isinstance(cfg.extract_date, datetime)
 
 
 def dlpath_from_resp(
     fstem: str, fext: str, data: bytes | None, resp: urllib.response.addinfourl | None, cfg: DlCfg
 ) -> tuple[Path, str]:
-    if not fext or cfg.use_disposition_fname:
+    def require_resp() -> urllib.response.addinfourl:
         assert need_resp_for_filename(fext, cfg)
+        assert resp is not None
+        return resp
+
+    if not fext or cfg.use_disposition_fname:
+        resp = require_resp()
         hdr_fname = resp.headers.get_filename()
         if hdr_fname:
             if cfg.fname_re_sub:
@@ -177,19 +179,23 @@ def dlpath_from_resp(
         else:
             hdr_ext = ""
         fext = fext or hdr_ext or mimetypes.guess_extension(resp.headers.get_content_type()) or ""
-    ts = (
+
+    ts = None
+    if cfg.archive and callable(cfg.extract_date):
+        assert data is not None
+        ts = cfg.extract_date(require_resp(), data)  # May return None
+
+    ts = ts or (
         None
         if not cfg.archive
-        else get_moddate(resp.headers) or datetime.now(UTC)
-        if cfg.extract_date is None
         else cfg.extract_date
         if isinstance(cfg.extract_date, datetime)
-        else cfg.extract_date(resp, data)
+        else get_moddate(require_resp().headers) or datetime.now(UTC)
     )
     return dlpath_from_date(fstem, fext, ts, cfg)
 
 
-def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes, Callable[[], None]] | None:
+def dl_url(url: str, cfg: DlCfg, *, autocommit: bool = True) -> Exception | tuple[bytes, Callable[[], None]] | None:
     if cfg.extract_date is not None and not cfg.archive:
         raise ValueError("extract_date is not None despite not archive")
     if cfg.archive_headers and not cfg.archive:
@@ -198,7 +204,7 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
     hdrfilepath = cfg.dldir / (fstem + "_lasthdr.txt")
     resp = None
 
-    def simpname(fpath: Path):
+    def simpname(fpath: Path) -> str:
         return splitbasestem(fpath.name)[0].removeprefix(fstem).strip("_")
 
     if need_resp_for_filename(fext, cfg):
@@ -220,18 +226,17 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
             # TODO: Might be unreachable / if-stmt might be mostly useless
             logger.warning("E %s %s %r", status, url, resp)
             return typing.cast(Exception, resp)
-        resp = typing.cast(urllib.response.addinfourl, resp)
 
         data = resp.read()
 
-        def commit_headers():
+        def commit_headers() -> None:
             write_hdr_file(resp.headers, hdrfilepath, allow_existing=True)
 
-        def is_header_updated(name):
+        def is_header_updated(name: str) -> bool:
             oldval = None if oldheaders is None else oldheaders.get(name)
             return resp.headers.get(name) != oldval
 
-        def maybe_commit_headers():
+        def maybe_commit_headers() -> None:
             if is_header_updated("Etag") or is_header_updated("Last-Modified"):
                 commit_headers()
             else:
@@ -279,7 +284,7 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
         if autocommit:
             commit_headers()
 
-            def commit_headers_fault():
+            def commit_headers_fault() -> Never:
                 raise NotImplementedError("Cannot commit after autocommit")
 
             commit_headers = commit_headers_fault
@@ -292,7 +297,7 @@ def dl_url(url: str, cfg: DlCfg, *, autocommit=True) -> Exception | tuple[bytes,
     return data, commit_headers
 
 
-def log_download(url: str, newpath: PurePath):
+def log_download(url: str, newpath: PurePath) -> None:
     relpath = newpath.relative_to(DATAROOT)
     logger.info("Downloaded %s %s", url, newpath if len(str(newpath)) <= len(str(relpath)) else relpath)
 
@@ -378,7 +383,11 @@ def download_statat(_kind: str, src_cfg: dict[str, Any]) -> Downloader:
     if not urls:
         raise ValueError("Empty source urls for statat downloader")
     exclude_url_regex = src_cfg.pop("exclude_url_regex", None)
-    exclude_url = re.compile(exclude_url_regex).search if exclude_url_regex else lambda _url: False
+    exclude_url = (
+        typing.cast(Callable[[str], bool], re.compile(exclude_url_regex).search)
+        if exclude_url_regex
+        else lambda _url: False
+    )
     if src_cfg:
         raise ValueError("Unknown keys in statat config: " + ", ".join(map(repr, src_cfg.keys())))
 
@@ -390,7 +399,9 @@ def download_statat(_kind: str, src_cfg: dict[str, Any]) -> Downloader:
                 dset = None
             res = dl_url(
                 url,
-                dataclasses.replace(dlcfg, extract_date=extract_ogd_moddate, fname_format=dset + "_{}" or "{}"),
+                dataclasses.replace(
+                    dlcfg, extract_date=extract_ogd_moddate, fname_format=dset + "_{}" if dset else "{}"
+                ),
                 autocommit=False,
             )
             if not isinstance(res, tuple):
@@ -402,7 +413,7 @@ def download_statat(_kind: str, src_cfg: dict[str, Any]) -> Downloader:
     return do_download_stat
 
 
-def download_unique_links_re(url: str, source_re: re.Pattern, dlcfg: DlCfg) -> None:
+def download_unique_links_re(url: str, source_re: re.Pattern[str], dlcfg: DlCfg) -> None:
     dlcfg = dataclasses.replace(dlcfg, archive=False, archive_headers=False)
     request = create_request(url)
     resp: urllib.response.addinfourl
@@ -492,7 +503,7 @@ def execute_dlset(
     only_enabled: bool,
     tag_map: dict[str, bool],
     dry_run: bool,
-):
+) -> None:
     dlset = dlset.copy()
     preset = dlset.pop("preset", None)
     if preset is not None:
@@ -510,7 +521,7 @@ def execute_dlset(
         downloader = parse_source_cfg(source_cfg)
     else:
 
-        def downloader(dlcfg: DlCfg):
+        def downloader(dlcfg: DlCfg) -> None:
             for url in urls:
                 dl_url(url, dlcfg)
 
@@ -566,7 +577,7 @@ def execute_config(
     only_enabled: bool,
     tag_map: dict[str, bool],
     dry_run: bool,
-):
+) -> None:
     for dlset in cfg["dlsets"]:
         try:
             execute_dlset(

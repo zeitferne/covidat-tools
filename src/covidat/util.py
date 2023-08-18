@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-Openable = str | bytes | os.PathLike
+Openable = str | os.PathLike[str]
 
 DL_TSTAMP_FMT = "%Y%m%d_%H%M%S"
 

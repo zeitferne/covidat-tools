@@ -17,7 +17,7 @@ HOSP_ALL_RE = re.compile(
 )
 
 
-def _hosp_re(station: str, cat: str) -> re.Pattern:
+def _hosp_re(station: str, cat: str) -> re.Pattern[str]:
     return re.compile(
         rf"COVID-19-Patient\*?innen in {station}pflege auf einer {cat}COVID-Station\*?: ?({INT_PAT})",
         re.IGNORECASE,
@@ -33,14 +33,14 @@ HOSP_I_NC = _hosp_re("Intensiv", "Nicht-")
 HOSP_I_PC = _hosp_re("Intensiv", "Post-")
 
 
-def match_number(pat: re.Pattern, text: str) -> int:
+def match_number(pat: re.Pattern[str], text: str) -> int:
     match = pat.search(text)
     if not match:
         raise KeyError(f"Could not find a match for: {pat.pattern}")
     return int(match.group(1).replace(".", ""))
 
 
-def collectwien(dirname, outname):
+def collectwien(dirname: util.Openable, outname: util.Openable) -> None:
     with open(outname, "w", encoding="utf-8", newline="\n") as outfile:
         writer = csv.DictWriter(
             outfile,
@@ -66,6 +66,7 @@ def collectwien(dirname, outname):
                 raise ValueError(f"No timestamp in {fname}")
             mdate = datetime.fromisoformat(mdate_match.group(1)).date().isoformat()
             try:
+                hospdata: dict[str, None | int]
                 if mdate not in ("2023-01-03", "2023-01-10", "2022-10-22"):
                     hospdata = {
                         "HospCov": match_number(HOSP_N_C, fdata),
@@ -99,7 +100,7 @@ def collectwien(dirname, outname):
                 raise ValueError(f"Error in {fname}: {e}") from e
 
 
-def main():
+def main() -> None:
     collectwien(util.COLLECTROOT / "wien", util.COLLECTROOT / "wien/wien.csv")
 
 

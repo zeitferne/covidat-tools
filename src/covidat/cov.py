@@ -1,5 +1,5 @@
 # ruff: noqa: PLR2004
-# type: ignore
+# mypy: ignore-errors
 import argparse
 import locale
 import logging

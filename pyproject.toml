@@ -92,7 +92,7 @@ dependencies = [
   "ruff>=0.0.243",
 ]
 [tool.hatch.envs.lint.scripts]
-typing = "mypy --install-types --non-interactive {args:src/covidat}"
+typing = "mypy --install-types --non-interactive  {args:--strict src}"
 style = [
   "ruff {args:.}",
   "black --check --diff {args:.}",

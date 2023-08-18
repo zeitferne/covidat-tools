@@ -4,12 +4,18 @@ import html
 import itertools
 import os
 import re
+import typing
+from collections.abc import Sequence
 from datetime import date, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 import dateparser
 from bs4 import BeautifulSoup
+
+if TYPE_CHECKING:
+    from _csv import _writer
 
 tz_vie = ZoneInfo("Europe/Vienna")
 
@@ -44,7 +50,7 @@ CHRES_RE = re.compile(r"(\d+|[a-züö/]+).? Bewohner", re.IGNORECASE)
 CARE_HOME_NONE_STR = "keine Fälle in den oberösterreichischen Alten- und Pflegeheim"
 
 
-def _hosp_re(marker):
+def _hosp_re(marker: str) -> re.Pattern[str]:
     return re.compile(
         rf"(?P<n>\d+) Covid-19-Patient[^\n]+ auf {marker} sind "
         r"[^\n]*?(?:(?P<n2>[0-9,]+)\s*Personen)?[^\n]*?(?:(?P<r>[0-9,]+)\s*(?:%|Prozent)\s*\)?)?"
@@ -75,13 +81,13 @@ zu versorgenden Patientinnen (?:und|bzw\.) Patienten sind (?P<ricu>[0-9,.]+ Proz
 print(HOSP_WEEKLY_RE.pattern)
 
 
-def processfile(fname: Path, ofile: csv.DictWriter, deathfile):
+def processfile(fname: Path, ofile: csv.DictWriter[str], deathfile: _writer) -> None:
     with open(fname, encoding="utf-8") as f:
         text = f.read()
     processtext(text, fname, ofile, deathfile)
 
 
-def toint(s):
+def toint(s: str | None) -> None | int:
     if s is None:
         return None
     try:
@@ -105,7 +111,7 @@ def toint(s):
         }[s]
 
 
-def gethospoccupancy(mhosp: re.Match):
+def gethospoccupancy(mhosp: re.Match[str] | None) -> tuple[None, None] | tuple[str, float | str]:
     if not mhosp:
         return (None, None)
 
@@ -117,8 +123,8 @@ def gethospoccupancy(mhosp: re.Match):
     return (n, n2)
 
 
-def extracthospvax(rtext: str, _fname: str):
-    rvals: list[None | int | float] = [None] * 4
+def extracthospvax(rtext: str, _fname: str) -> dict[str, None | float | int | str]:
+    rvals: list[None | int | float | str] = [None] * 4
     mhosp = NST_VACC_RE.search(rtext)
     rvals[:2] = gethospoccupancy(mhosp)
     mhosp = ICU_VACC_RE.search(rtext)
@@ -135,7 +141,7 @@ def extracthospvax(rtext: str, _fname: str):
         # XXX: This will break down if we get zero unvaccinated
         # in either ICU or NST. Probably a new text will be used then.
 
-        def parserate(rate: str):
+        def parserate(rate: str) -> float | int:
             suffix = " Prozent"
             if rate.endswith(suffix):
                 return float(rate[: -len(suffix)].replace(",", ".")) / 100
@@ -147,7 +153,7 @@ def extracthospvax(rtext: str, _fname: str):
         float(mhosp.group("rnst").replace(",", ".")) / 100
         ricu = parserate(mhosp.group("ricu"))
         int(mhosp.group("nstunvacc"))
-        icuunvacc = int(mhosp.group("icuunvacc"))
+        icuunvacc: int | float = int(mhosp.group("icuunvacc"))
 
         # Looks like the normal station percentage is about all persons, not
         # only newly admitted. Don't use it.
@@ -173,14 +179,14 @@ def extracthospvax(rtext: str, _fname: str):
 UHR_RE = re.compile(r"(\s+\d+) Uhr")
 
 
-def parsets(tsstr: str, fname: str | os.PathLike):
+def parsets(tsstr: str, fname: str | os.PathLike[str]) -> datetime:
     ts = dateparser.parse(UHR_RE.sub(r"\1:00 Uhr", html.unescape(tsstr)), languages=["de"])
     if not ts:
         raise ValueError(f"Bad date for {fname}: {html.unescape(tsstr)}")
     return ts
 
 
-def findts(text: str, fname: Path):
+def findts(text: str, fname: Path) -> datetime | None:
     m = TITLE_RE.search(text)
     # breakpoint()
     if not m:
@@ -215,7 +221,7 @@ def findts(text: str, fname: Path):
     return ttl_ts
 
 
-def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
+def processtext(text: str, fname: Path, ofile: csv.DictWriter[str], deathfile: _writer) -> None:
     ts = findts(text, fname)
     if ts is None:
         # print("Skipping", fname.name, m.group(1), "no timestamp")
@@ -227,36 +233,37 @@ def processtext(text: str, fname: Path, ofile: csv.DictWriter, deathfile):
         #    ts,
         # )
         rtext = HWS_RE.sub(" ", BeautifulSoup(text, "html.parser").get_text()).replace("\r", "\n")
-        row = {"Datum": ts, "id": fname.name}
+        row: dict[str, str | float | None | datetime] = {"Datum": ts, "id": fname.name}
         # with open(fname.stem + ".txt", "w", encoding="utf-8", newline="") as oof:
         #    oof.write(rtext)
+        chvals: Sequence[int | None]
         if CARE_HOME_NONE_STR in rtext:
             chvals = (0, 0, 0)
         else:
             # mch = CARE_HOME_RE.search(rtext) or CARE_HOME_RE_2.search(rtext)
             mch = CARE_HOME_RE_LN.search(rtext)
             if mch:
-                chvals = [None] * 3
-                chvals[0] = mch.group(1)
-                if chvals[0] == "von":
-                    chvals[0] = None
+                chvals_raw: list[None | str] = [None] * 3
+                chvals_raw[0] = mch.group(1)
+                if chvals_raw[0] == "von":
+                    chvals_raw[0] = None
                 m2 = CHSTAFF_RE.search(mch.group(0))
-                chvals[1] = m2.group(1) if m2 else None
-                if chvals[1] == "und":
-                    chvals[1] = None
+                chvals_raw[1] = m2.group(1) if m2 else None
+                if chvals_raw[1] == "und":
+                    chvals_raw[1] = None
                 m2 = CHRES_RE.search(mch.group(0))
-                chvals[2] = m2.group(1) if m2 else None
-                if chvals[2] == "und":
-                    chvals[2] = None
+                chvals_raw[2] = m2.group(1) if m2 else None
+                if chvals_raw[2] == "und":
+                    chvals_raw[2] = None
                 try:
-                    chvals = [toint(chval) for chval in chvals]
+                    chvals = [toint(chval) for chval in chvals_raw]
                 except KeyError as k:
                     raise ValueError(f"Failed parsing int '{k.args[0]}' in {fname}: {mch.group(0)}") from None
                 if all(v is None for v in chvals):
                     raise ValueError(f"No result in {fname}: {mch.group(0)}")
                 chvals[1] = chvals[1] or 0
                 chvals[2] = chvals[2] or 0
-                if chvals[0] is None and sum(chvals[1:]) == 1:
+                if chvals[0] is None and sum(typing.cast(list[int], chvals[1:])) == 1:
                     chvals[0] = 1
                 if not any(chvals):
                     chvals[0] = 0
@@ -331,7 +338,7 @@ DEL_RE = re.compile(
 DEATH_START_RE = re.compile("Aktuelle Tode|Todesfälle im Zusammenhang mit C", re.IGNORECASE)
 
 
-def extractdeaths(ts: date, name: str, rtext: str, deathfile):
+def extractdeaths(ts: date, name: str, rtext: str, deathfile: _writer) -> None:
     if name == "245261.htm":
         rtext = rtext.replace("26.11. Salzkammergut", "26.11. (Salzkammergut")
     elif name == "245594.htm":
@@ -354,7 +361,7 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
     rtext = DEL_RE.sub("\n", rtext)
     n = 0
     # print(ts, name)
-    items = []
+    items: list[list[str | float | int | date | None]] = []
     for m in itertools.chain.from_iterable(r.finditer(rtext) for r in DEAD_RES):
         n += 1
         # print(name, n, m)
@@ -377,11 +384,11 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
                 ],
                 settings={
                     #'DATE_ORDER': 'DMY',
-                    "RELATIVE_BASE": ts,
+                    "RELATIVE_BASE": typing.cast(datetime, ts),
                     "REQUIRE_PARTS": ["day", "month"],
                     "PREFER_DATES_FROM": "past",
                     "PARSERS": ["custom-formats"],
-                    "DEFAULT_LANGUAGES": ["de"],
+                    # "DEFAULT_LANGUAGES": ["de"],
                 },
             )
         )
@@ -429,7 +436,7 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
             if (
                 "verstorben" not in m[0]
                 and "Obduktion" not in m[0]
-                and (m.start(0) - DEATH_START_RE.search(rtext).end(0) > reasonable_len)
+                and (m.start(0) - typing.cast(re.Match[str], DEATH_START_RE.search(rtext)).end(0) > reasonable_len)
             ):
                 raise ValueError(f"Really a death? '{m.group(0)}' in {name}")
             # print(name, n, m, m.groupdict())
@@ -441,7 +448,7 @@ def extractdeaths(ts: date, name: str, rtext: str, deathfile):
         deathfile.writerow(item)
 
 
-def runextraction(args):
+def runextraction(args: argparse.Namespace) -> None:
     done = set()
     try:
         with open("extractlk.csv", encoding="utf-8", newline="") as oldfile_h:
@@ -460,7 +467,7 @@ def runextraction(args):
     ):
         ofile = csv.DictWriter(
             ofile_h,
-            [
+            (
                 "Datum",
                 "id",
                 "chlocs",
@@ -474,7 +481,7 @@ def runextraction(args):
                 "hospunvaxnew",
                 "FZICUnew",
                 "icuunvaxnew",
-            ],
+            ),
             delimiter=";",
         )
         if not done:
@@ -500,7 +507,7 @@ def runextraction(args):
             processfile(fname, ofile, deathfile)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("lkdir")
     args = parser.parse_args()

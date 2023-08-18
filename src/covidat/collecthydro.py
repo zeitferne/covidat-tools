@@ -12,7 +12,7 @@ from . import util
 logger = logging.getLogger(__name__)
 
 
-def collecthydro(prefixname: str, *, has_uww: bool, insubdir: bool, namecol: str = "name"):
+def collecthydro(prefixname: str, *, has_uww: bool, insubdir: bool, namecol: str = "name") -> None:
     subdir = "covid/abwassermonitoring"
     outname = util.COLLECTROOT / subdir / (prefixname + "_all.csv.xz")
     outname.parent.mkdir(parents=True, exist_ok=True)
@@ -44,7 +44,7 @@ def collecthydro(prefixname: str, *, has_uww: bool, insubdir: bool, namecol: str
         logger.info("%s: Collected %d files", prefixname, n)
 
 
-def main():
+def main() -> None:
     logging.basicConfig(
         level="INFO",
         format=util.LOG_FORMAT,

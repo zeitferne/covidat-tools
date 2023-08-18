@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -6,7 +7,7 @@ import pandas as pd
 from . import util
 
 
-def _ks_colnames(sfx):
+def _ks_colnames(sfx: str) -> list[str]:
     return [c + sfx for c in KS_BASECOLS]
 
 
@@ -17,7 +18,7 @@ KS_FNAME_RE = re.compile(r"Mb_(\d\d)(\d\d)")
 SVDIRNAME = "sozialversicherung-monatsberichte"
 
 
-def load_ks(pth):
+def load_ks(pth: Path) -> pd.DataFrame:
     m = KS_FNAME_RE.fullmatch(pth.stem)
     if not m:
         raise ValueError("Unexpected filename stem: '" + pth.stem + "' in: " + str(pth))
@@ -39,7 +40,7 @@ def load_ks(pth):
     return ks
 
 
-def collect_ks():
+def collect_ks() -> pd.DataFrame:
     ks = pd.concat([load_ks(pth) for pth in (util.DATAROOT / SVDIRNAME).glob("Mb_????.xls*")])
     ks["insurer"].replace(
         "I n s g e s a m t|insgesamt|ASVG-Krankenkassen",
@@ -91,7 +92,7 @@ def collect_ks():
     return ks.sort_index()
 
 
-def main():
+def main() -> None:
     outdir = util.COLLECTROOT / SVDIRNAME
     data = collect_ks()
     outdir.mkdir(parents=True, exist_ok=True)

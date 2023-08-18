@@ -8,8 +8,10 @@ import re
 import sys
 import traceback
 import warnings
+from collections.abc import Callable
 from datetime import UTC, date, datetime
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -21,14 +23,14 @@ HWS_RE = re.compile(r"[ \t\u00A0]+")
 RESCOUNT_RE = re.compile(r"\b(\d+) Ergebnis(?:se)? gefunden\b")
 
 
-def match_number(pat: re.Pattern, text: str) -> int:
+def match_number(pat: re.Pattern[str], text: str) -> int:
     match = pat.search(text)
     if not match:
         raise KeyError(f"Could not find a match for: {pat.pattern}")
     return int(match.group(1).replace(".", ""))
 
 
-def collectshortage(dirname, outname):
+def collectshortage(dirname: util.Openable, outname: util.Openable) -> None:
     with open(outname, "w", encoding="utf-8", newline="\n") as outfile:
         writer = csv.DictWriter(
             outfile,
@@ -53,7 +55,7 @@ def collectshortage(dirname, outname):
                 raise ValueError(f"Error in {fname}: {e}") from e
 
 
-def norm_name(name: pd.Series):
+def norm_name(name: pd.Series[str]) -> pd.Series[str]:
     return (
         name.replace(r"\b(\d|,)+\b", "0", regex=True)
         .replace(r"\b\d+([mg])", r"0 \1", regex=True)
@@ -63,7 +65,7 @@ def norm_name(name: pd.Series):
     )
 
 
-def load_azr():
+def load_azr() -> pd.DataFrame:
     cachefile = util.COLLECTROOT / "medshort/ASP-Register.csv"
     try:
         azr = pd.read_csv(cachefile)
@@ -86,7 +88,7 @@ def load_azr():
     return pd.concat([azr, azr0, azr_m]).reset_index(drop=True)
 
 
-def agg_status(s: pd.Series):
+def agg_status(s: pd.Series[str]) -> str:
     return (
         "verfügbar"
         if (s == "verfügbar").all()
@@ -105,7 +107,7 @@ cat_prio = [
 ][::-1]
 
 
-def load_veasp_xml(fname, azr: pd.DataFrame, *, only_statagg: bool) -> pd.DataFrame:
+def load_veasp_xml(fname: util.Openable, azr: pd.DataFrame, *, only_statagg: bool) -> pd.DataFrame:
     veasp = pd.read_xml(fname, parser="etree", xpath="./Packungen/Packung")
     veasp.rename(
         columns={"Bezeichnung_Arzneispezialitaet": "Name"},
@@ -139,16 +141,16 @@ def load_veasp_xml(fname, azr: pd.DataFrame, *, only_statagg: bool) -> pd.DataFr
     # veasp.sort_values(["Avail_c"], kind="stable", inplace=True)
     # veasp.drop(columns=["Verwendung_y"], inplace=True)
     try:
-        agg = {
+        agg: dict[str, str | Callable[..., Any]] = {
             "Name": "first",
             "Status": agg_status,
         }
         if not only_statagg:
 
-            def to_dt(s):
+            def to_dt(s: pd.Series[str]) -> pd.Series[pd.Timestamp]:
                 return pd.to_datetime(s, format="%Y-%m-%d")
 
-            veasp.loc[veasp["Status"] == "verfügbar", "Datum_voraussichtliche_Wiederbelieferung"] = pd.NA
+            veasp.loc[veasp["Status"] == "verfügbar", "Datum_voraussichtliche_Wiederbelieferung"] = None
             agg |= {
                 "Grund": lambda g: " / ".join(g.unique()),
                 "Melder": lambda w: " / ".join(w.unique()),
@@ -164,7 +166,7 @@ def load_veasp_xml(fname, azr: pd.DataFrame, *, only_statagg: bool) -> pd.DataFr
         raise ValueError(f"{fname}: Bad status: {veasp['Status'].unique()}") from None
 
 
-def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter):
+def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.DictWriter[str]) -> None:
     fdate = datetime.strptime(fname.stem.split("_", 1)[1].split(".", 1)[0], "%Y%m%d_%H%M%S").replace(tzinfo=UTC).date()
     if fdate in dts:
         return
@@ -230,9 +232,9 @@ def processfile(dts: set[date], fname: Path, azr: pd.DataFrame, writer: csv.Dict
     dts.add(fdate)
 
 
-def collectshortage_ex(dirname, outname):
+def collectshortage_ex(dirname: util.Openable, outname: util.Openable) -> None:
     azr = load_azr()
-    dts = set()
+    dts: set[date] = set()
     with open(outname, "w", encoding="utf-8", newline="\n") as outfile:
         writer = csv.DictWriter(
             outfile,
@@ -259,7 +261,7 @@ def collectshortage_ex(dirname, outname):
                 )
 
 
-def main():
+def main() -> None:
     collectdir = util.COLLECTROOT / "medshort"
     collectdir.mkdir(parents=True, exist_ok=True)
     datadir = util.DATAROOT / "basg-medicineshortage"

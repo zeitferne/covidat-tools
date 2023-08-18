@@ -28,19 +28,19 @@ def first_filedate(df: pd.DataFrame, catcols: list[str]) -> pd.DataFrame:
     return df.sort_values("FileDate", kind="stable").groupby(["Datum", *catcols]).first()
 
 
-def add_date(df: pd.DataFrame, colname: str, format=None) -> pd.DataFrame:
+def add_date(df: pd.DataFrame, colname: str, format: str | None = None) -> pd.DataFrame:
     df["Datum"] = pd.to_datetime(df[colname], dayfirst=True, format=format, exact=format is not None)
     if colname != "Datum":
         df.drop(columns=colname, inplace=True)
     return df
 
 
-def norm_df(df: pd.DataFrame, *, datecol: str, format=None) -> pd.DataFrame:
+def norm_df(df: pd.DataFrame, *, datecol: str, format: str | None = None) -> pd.DataFrame:
     add_date(df, datecol, format=format)
     return df
 
 
-def shorten_bezname(bezname: str, *, soft=False) -> str:
+def shorten_bezname(bezname: str, *, soft: bool = False) -> str:
     result = (
         bezname.replace("Sankt Johann im Pongau", "Pongau")
         .replace(" an der ", "/")

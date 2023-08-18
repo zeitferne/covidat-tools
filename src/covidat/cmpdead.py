@@ -6,6 +6,8 @@ Offers a commandline interface as well to compare specific AGES
 data drops (see --help).
 """
 
+# mypy: ignore-errors
+
 import dataclasses
 import json
 import locale

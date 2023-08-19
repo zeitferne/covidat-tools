@@ -41,7 +41,7 @@ def main() -> None:
     nbfiles = (args.notebook,) if args.notebook else Path(".").glob("*.ipynb")
 
     for nbfile in nbfiles:
-        no_input = b"#@export: --no-input" in nbfile.read_bytes()[:16_000]
+        no_input = b"# @export: --no-input" in nbfile.read_bytes()[:16_000]
 
         exe = which("jupyter")
         if not exe:

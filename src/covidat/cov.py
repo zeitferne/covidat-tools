@@ -2160,17 +2160,10 @@ def load_bev() -> pd.DataFrame:
     result["BundeslandID"] = result["BundeslandID"].str.removeprefix("B00-").astype(int)
     result["Geschlecht"] = result["Geschlecht"].map({"C11-1": "M", "C11-2": "W"})
     result["AltersgruppeID5"] = result["AltersgruppeID5"].str.removeprefix("GALT5J99-").astype(int)
-    result.drop(columns="Jahr")
-    return result.groupby(
-        [
-            result["Datum"],
-            result["BundeslandID"],
-            result["AltersgruppeID5"]
-            .map(lambda ag5: 1 if ag5 == 1 else 10 if ag5 >= 18 else (ag5 + 2) // 2)
-            .rename("AltersgruppeID"),
-            result["Geschlecht"],
-        ]
-    )["AnzEinwohner"].sum()
+    result["AltersgruppeID"] = result["AltersgruppeID5"].map(
+        lambda ag5: 1 if ag5 == 1 else 10 if ag5 >= 18 else (ag5 + 2) // 2
+    )
+    return result.groupby(["Datum", "BundeslandID", "AltersgruppeID", "Geschlecht"])["AnzEinwohner"].sum()
 
 
 def bev_to_daily(statbev: pd.DataFrame, minyear: int = 2020, maxyear: int | None = None) -> pd.DataFrame:
@@ -2183,9 +2176,9 @@ def bev_to_daily(statbev: pd.DataFrame, minyear: int = 2020, maxyear: int | None
     ]
     pandembev = pandembev.groupby(["BundeslandID", "Geschlecht", "AltersgruppeID"]).apply(
         lambda s: s.reset_index(["BundeslandID", "Geschlecht", "AltersgruppeID"], drop=True)
+        .to_timestamp()
         .resample("D")
         .interpolate()
-        .to_timestamp()
     )
     pandembev = add_sum_rows(pandembev.to_frame(), "BundeslandID", 10)["AnzEinwohner"]
     pandembev.index = pandembev.index.reorder_levels(origlevels)

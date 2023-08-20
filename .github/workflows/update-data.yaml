@@ -71,7 +71,6 @@ jobs:
         id: prepareupdate
         env:
           FORCE_UPDATE: ${{ inputs.force-notebook-update }}
-          GITHUB_SERVER_URL: ${{ github.server_url }}
         run: |
           LAST_REV=`cat "notebooks/gh-pages/$REV_PATH"`
           echo "Previous revision: $LAST_REV"
@@ -90,6 +89,8 @@ jobs:
           fi
       - name: Re-generate pages
         if: steps.prepareupdate.outputs.updated
+        env:
+          GITHUB_SERVER_URL: ${{ github.server_url }}
         run: |
           sudo locale-gen de_AT.UTF-8
           sudo update-locale

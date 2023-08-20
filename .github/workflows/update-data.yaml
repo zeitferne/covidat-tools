@@ -95,7 +95,7 @@ jobs:
           sudo locale-gen de_AT.UTF-8
           sudo update-locale
 
-          TOOLS_DATE=`git log -1 --format="%aD"`
+          export TOOLS_DATE=`git log -1 --format="%aD"`
 
           python -m pip install -U pip
           pip install hatch
@@ -104,8 +104,8 @@ jobs:
 
 
           cd "$COVDATA_REPO_ROOT"
-          COVDATA_COMMIT=`git rev-parse HEAD`
-          COVDATA_DATE=`git log -1 --format="%aD"`
+          export COVDATA_COMMIT=`git rev-parse HEAD`
+          export COVDATA_DATE=`git log -1 --format="%aD"`
 
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"
 

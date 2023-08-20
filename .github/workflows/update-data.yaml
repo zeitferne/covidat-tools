@@ -93,16 +93,17 @@ jobs:
           sudo locale-gen de_AT.UTF-8
           sudo update-locale
 
+          TOOLS_DATE=`git log -1 --format="%aD"`
+
           python -m pip install -U pip
           pip install hatch
           hatch -v -e notebooks run sh -exc \
             'collectshortage && collecthydro && python -m covidat.collectsvat'
 
-          TOOLS_DATE=`git lot -1 --format="%aD"`
 
           cd "$COVDATA_REPO_ROOT"
           COVDATA_COMMIT=`git rev-parse HEAD`
-          COVDATA_DATE=`git lot -1 --format="%aD"`
+          COVDATA_DATE=`git log -1 --format="%aD"`
 
           cd "$GITHUB_WORKSPACE/notebooks/gh-pages"
 

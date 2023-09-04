@@ -146,7 +146,7 @@ def sortedlabels(ax, mms0, by, cat="Bundesland", fmtval=None):
 
 
 def sum_rows(df, cname, csval, agg="sum"):
-    dfsum = df.groupby(level=[n for n in df.index.names if n != cname]).agg(agg)
+    dfsum = df.groupby(level=[n for n in df.index.names if n != cname], sort=False).agg(agg)
     dfsum[cname] = csval
     dfsum.set_index(cname, append=True, inplace=True, verify_integrity=True)
     return dfsum.reorder_levels(df.index.names)

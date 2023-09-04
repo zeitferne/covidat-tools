@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+from datetime import UTC, timedelta
+
+import numpy as np
 import pandas as pd
 
 from .util import COLLECTROOT, DATAROOT, fdate_from_fname
@@ -96,3 +100,54 @@ SHORTNAME2_BY_BUNDESLAND = {
     "Wien": "Wien",
     "Österreich": "AUT",
 }
+
+
+@dataclass(frozen=True, kw_only=True)
+class EstiInfo:
+    change_single: pd.DataFrame
+    change_agg: pd.DataFrame
+    change_agg_cum: pd.DataFrame
+    change_agg_inner_cum: pd.DataFrame
+    esti_len: int
+
+
+def calc_esti(sariat: pd.Series) -> EstiInfo:
+    pltcol = sariat.name
+    sariat = sariat.to_frame()
+    sariat["age"] = (
+        sariat.index.get_level_values("FileDate")
+        - sariat.index.get_level_values("Datum").tz_localize("Europe/Vienna").tz_convert(UTC)
+        - timedelta(7)
+    )
+    sariat["i_age"] = sariat["age"] // timedelta(7)
+
+    # display(sariat)
+
+    sariat = pd.merge_asof(
+        sariat,
+        sariat[pltcol].rename("prev_report"),
+        on="FileDate",
+        by="Datum",
+        allow_exact_matches=False,
+    )
+    sariat.set_index(["i_age", "Datum"], inplace=True, verify_integrity=True)
+    # display(sariat)
+    sariat["change_rel"] = sariat[pltcol] / sariat["prev_report"]
+    sariat["change_rel"] = sariat["change_rel"].where(np.isfinite(sariat["change_rel"]))
+    sariat["change_rel_cum"] = sariat.groupby(["FileDate"])["change_rel"].transform(
+        lambda s: s.cumprod()[::-1].shift(-1)
+    )
+    # display(sariat)
+
+    change_rel_r = sariat.groupby("i_age")["change_rel"].agg(["min", "max", "median"]).sort_index()
+    esti_len = 10
+    change_cum_r = change_rel_r[::-1].cumprod().shift(1).sort_index().loc[:esti_len]
+
+    change_cum_inner_r = sariat.groupby("i_age")["change_rel_cum"].agg(["min", "max", "median"]).sort_index()
+    return EstiInfo(
+        change_single=sariat,
+        change_agg=change_rel_r,
+        change_agg_cum=change_cum_r,
+        change_agg_inner_cum=change_cum_inner_r,
+        esti_len=esti_len,
+    )

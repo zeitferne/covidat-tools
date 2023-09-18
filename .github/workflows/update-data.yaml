@@ -6,6 +6,8 @@ on:
         type: boolean
   schedule:
     - cron: "24 17,3 * * *"
+    # On Tuesdays, do an additional run at 10:8 UTC (12:08 CEST, for sari)
+    - cron: "8 10 * * 2"
 permissions:
   contents: write
 defaults:

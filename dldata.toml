@@ -7,7 +7,7 @@ default_file_extension = ".json"
   [[dlsets]]
   urls = [
       "https://www.tirol.gv.at/fileadmin/daten/abwasser/LagebildAbwasser.png",
-      "https://www.tirol.gv.at/fileadmin/daten/abwasser/abwasser.json",
+      #"https://www.tirol.gv.at/fileadmin/daten/abwasser/abwasser.json",
   ]
   dir = "covid/abwassermonitoring/tirol"
   sortdir_fmt = "%Y"
@@ -28,6 +28,7 @@ default_file_extension = ".json"
     "https://abwassermonitoring.at/cbe1/natmon_01",
     "https://abwassermonitoring.at/cbe1/natmon_02",
     "https://abwassermonitoring.at/cbe1/dl_natmon_01.csv",
+    "https://abwassermonitoring.at/cbe1/dl_natmon_variants.csv",
   ]
   sortdir_fmt = "%Y"
 

@@ -111,7 +111,8 @@ class EstiInfo:
     esti_len: int
 
 
-def calc_esti(sariat: pd.Series) -> EstiInfo:
+def calc_esti(sariat: pd.Series, *, local_esti=False) -> EstiInfo:
+    # display(sariat)
     pltcol = sariat.name
     sariat = sariat.to_frame()
     sariat["age"] = (
@@ -119,31 +120,73 @@ def calc_esti(sariat: pd.Series) -> EstiInfo:
         - sariat.index.get_level_values("Datum").tz_localize("Europe/Vienna").tz_convert(UTC)
         - timedelta(7)
     )
+    # sariat["weekno"] = (sariat.index.get_level_values("Datum") - sariat.index.unique("Datum").min()) // timedelta(7)
     sariat["i_age"] = sariat["age"] // timedelta(7)
 
     # display(sariat)
 
     sariat = pd.merge_asof(
         sariat,
-        sariat[pltcol].rename("prev_report"),
+        sariat[pltcol].rename("next_report"),
         on="FileDate",
         by="Datum",
         allow_exact_matches=False,
+        direction="forward",
     )
     sariat.set_index(["i_age", "Datum"], inplace=True, verify_integrity=True)
     # display(sariat)
-    sariat["change_rel"] = sariat[pltcol] / sariat["prev_report"]
+    sariat["change_rel"] = sariat["next_report"] / sariat[pltcol]
     sariat["change_rel"] = sariat["change_rel"].where(np.isfinite(sariat["change_rel"]))
-    sariat["change_rel_cum"] = sariat.groupby(["FileDate"])["change_rel"].transform(
-        lambda s: s.cumprod()[::-1].shift(-1)
-    )
+    sariat["change_rel_cum"] = sariat.groupby(["FileDate"])["change_rel"].transform(lambda s: s.cumprod()[::-1])
     # display(sariat)
 
     change_rel_r = sariat.groupby("i_age")["change_rel"].agg(["min", "max", "median"]).sort_index()
     esti_len = 10
-    change_cum_r = change_rel_r[::-1].cumprod().shift(1).sort_index().loc[:esti_len]
+    change_cum_r = change_rel_r[::-1].cumprod().sort_index().loc[:esti_len]
 
     change_cum_inner_r = sariat.groupby("i_age")["change_rel_cum"].agg(["min", "max", "median"]).sort_index()
+
+    sariat.sort_index(inplace=True)
+
+    if local_esti:
+        # Reporting factors using “local” real-time data ("conservative estimate")
+        # Equation (8) in Section 3.2 "Estimating reporting factors"from:
+        #
+        # Beesley LJ, Osthus D, Del Valle SY (2022)
+        # Addressing delayed case reporting in infectious disease forecast modeling.
+        # PLoS Comput Biol 18(6): e1010115.
+        # https://doi.org/10.1371/journal.pcbi.1010115
+
+        # Notation translation: t=date (week), d=i_age (lag)
+        compl_after_weeks = 6  # K
+
+        def calc_local_esti(date, i_age):
+            fromdate = date - compl_after_weeks * timedelta(7)
+            todate = date - (i_age + 1) * timedelta(7)
+            daterng = pd.date_range(fromdate, todate, freq="W-MON")
+            # print(f"{date=} {i_age=} {fromdate=} {todate=}")
+            older = sariat.loc[pd.IndexSlice[i_age, fromdate:todate], pltcol]
+
+            if older.sum() == 0 or len(older) != len(daterng):
+                # print("short", older)
+                return np.nan
+            newidxs = list(zip((date - daterng) // timedelta(7), daterng, strict=True))
+            # print(f"{newidxs=}")
+            newer = sariat.loc[newidxs, pltcol]
+            if len(newer) != len(daterng):
+                return np.nan
+            # display(older.rename("older"), newer.rename("newer"))
+            return newer.sum() / older.sum()
+
+        # sariat.set_index(["i_age", "Datum"], inplace=True, verify_integrity=True)
+        # display(sariat)
+        for i_age in range(compl_after_weeks):
+            sariat.loc[i_age, "change_loc"] = (
+                sariat.loc[i_age]
+                .index.get_level_values("Datum")
+                .map(lambda dt: calc_local_esti(dt, i_age))  # noqa: B023
+            )
+
     return EstiInfo(
         change_single=sariat,
         change_agg=change_rel_r,

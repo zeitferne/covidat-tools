@@ -127,15 +127,14 @@ def calc_esti(sariat: pd.Series, *, local_esti=False) -> EstiInfo:
 
     sariat = pd.merge_asof(
         sariat,
-        sariat[pltcol].rename("next_report"),
+        sariat[pltcol].rename("prev_report"),
         on="FileDate",
         by="Datum",
         allow_exact_matches=False,
-        direction="forward",
     )
     sariat.set_index(["i_age", "Datum"], inplace=True, verify_integrity=True)
     # display(sariat)
-    sariat["change_rel"] = sariat["next_report"] / sariat[pltcol]
+    sariat["change_rel"] = (sariat[pltcol] / sariat["prev_report"]).shift(1)
     sariat["change_rel"] = sariat["change_rel"].where(np.isfinite(sariat["change_rel"]))
     sariat["change_rel_cum"] = sariat.groupby(["FileDate"])["change_rel"].transform(lambda s: s.cumprod()[::-1])
     # display(sariat)

@@ -99,13 +99,14 @@ def labelend2(
     shorten=lambda c: SHORTNAME_BY_BUNDESLAND[c],
     colorize=None,
     ends=(False, True),
+    border_only=False,
     **kwargs,
 ):
     annotargs = {"va": "center"} | kwargs
     for i, bl in enumerate(mms[cats].unique()):
         # print(bl)
         ys = mms[mms[cats] == bl][ycol]
-        lastidx = ys.last_valid_index()
+        lastidx = ys.index[-1] if border_only else ys.last_valid_index()
         if lastidx is not None:
             if colorize:
                 annotargs["color"] = colorize[i]
@@ -120,7 +121,7 @@ def labelend2(
                     **annotargs,
                 )
             # print(bl, cov.SHORTNAME_BY_BUNDESLAND[bl], (mms["Datum"].iloc[-1], ys.iloc[-1]))
-            firstidx = ys.first_valid_index()
+            firstidx = ys.index[0] if border_only else ys.first_valid_index()
             if ends[0] and (firstidx != lastidx or not ends[1]):
                 ax.annotate(
                     txt,

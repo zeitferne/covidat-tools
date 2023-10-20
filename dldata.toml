@@ -6,7 +6,7 @@ default_file_extension = ".json"
 
   [[dlsets]]
   urls = [
-      "https://www.tirol.gv.at/fileadmin/daten/abwasser/LagebildAbwasser.png",
+      "https://surviral.at/01_aktuellelagetirol.jpg",
       #"https://www.tirol.gv.at/fileadmin/daten/abwasser/abwasser.json",
   ]
   dir = "covid/abwassermonitoring/tirol"
@@ -122,8 +122,8 @@ default_file_extension = ".json"
   source.kind = "scan_unique_links_re"
   source.urls = [
     # Website > Startseite > Fachinformationen > Zahlen / Daten / Fakten >
-    # Statistische Daten aus der SV > Statistische Daten aus der Sozialversicherung
-    "https://www.sozialversicherung.at/cdscontent/?contentid=10007.853001&portal=svportal"
+    # Statistische Daten aus der SV > Monatsberichte
+    "https://www.sozialversicherung.at/cdscontent/?contentid=10007.894919&portal=svportal"
   ]
   source.regex = '<a [^>]*\besvlink_excel\b[^>]*\bhref="([^"]+)"'
   dir = "sozialversicherung-monatsberichte"

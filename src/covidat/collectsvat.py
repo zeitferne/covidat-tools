@@ -1,5 +1,5 @@
 import re
-from itertools import concat
+from itertools import chain
 from pathlib import Path
 
 import numpy as np
@@ -43,7 +43,7 @@ def load_ks(pth: Path) -> pd.DataFrame:
 
 def collect_ks() -> pd.DataFrame:
     svdir = util.DATAROOT / SVDIRNAME
-    ks = pd.concat([load_ks(pth) for pth in concat(svdir.glob("Mb_????.xls*"), svdir.glob("Monatsbericht_????.xlsx"))])
+    ks = pd.concat([load_ks(pth) for pth in chain(svdir.glob("Mb_????.xls*"), svdir.glob("Monatsbericht_????.xlsx"))])
     ks["insurer"].replace(
         "I n s g e s a m t|insgesamt|ASVG-Krankenkassen",
         "Insgesamt",

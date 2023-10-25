@@ -58,6 +58,15 @@ default_file_extension = ".json"
   ]
   dir = "covid/ages-varianten"
 
+  [[dlsets]] # AGES variant CSV does not keep link URL
+  tags = ["ages-variant-new"]
+  source.kind = "scan_unique_links_re"
+  source.urls = [
+    "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/coronavirus"
+  ]
+  source.regex = '"([^"]*Varianten_20\d\d[^"]*\.csv)"'
+  dir = "covid/ages-varianten"
+
   [[dlsets]]
   urls = [
     "https://www.ages.at/fileadmin/Corona/Wochenbericht/timeline-testungen-bundeslaender.csv",
@@ -73,6 +82,11 @@ default_file_extension = ".json"
     "https://www.virologie.meduniwien.ac.at/fileadmin/virologie/files/Sars/sars_woche_2020.jpg"
   ]
   dir = "covid/meduniwien"
+
+  [[dlsets]]
+  urls = ["https://raw.githubusercontent.com/cov-lineages/pango-designation/master/pango_designation/alias_key.json"]
+  dir = "covid/"
+  archive = false
 
 # other
 

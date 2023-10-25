@@ -21,12 +21,13 @@ from itertools import chain
 from os.path import basename
 from pathlib import Path, PurePath, PurePosixPath
 from typing import Any, Never, TypeVar
-from urllib.parse import parse_qs, urlparse
+from urllib.error import HTTPError
+from urllib.parse import parse_qs, urljoin, urlparse
 from urllib.request import urlopen
 from zipfile import ZipFile
 from zoneinfo import ZoneInfo
 
-from .dlutil import create_request, dl_with_header_cache, get_moddate, write_hdr_file
+from .dlutil import create_request, dl_with_header_cache, err_with_url, get_moddate, write_hdr_file
 from .util import DATAROOT, DL_TSTAMP_FMT, LOG_FORMAT, Openable, parse_statat_date
 
 logger = logging.getLogger(__name__)
@@ -444,8 +445,11 @@ def download_unique_links_re(url: str, source_re: re.Pattern[str], dlcfg: DlCfg)
                 newurllist[content_url] = urlname
                 continue
             hits += 1
-            with urlopen(create_request(content_url)) as resp:  # noqa: S310
-                data = resp.read()
+            try:
+                with urlopen(create_request(urljoin(url, content_url))) as resp:  # noqa: S310
+                    data = resp.read()
+            except HTTPError as e:
+                raise err_with_url(e, content_url) from e
             fstem, fext = get_dl_base_fname(content_url, dlcfg)
             newpath = dlpath_from_resp(fstem, fext, data, resp, dlcfg)[0]
             dlpath = write_data_tmp(newpath, data, dlcfg)

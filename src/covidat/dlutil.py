@@ -62,6 +62,13 @@ def create_request(url: str, headers: dict[str, str] | None = None) -> Request:
     return req
 
 
+def err_with_url(
+    e: HTTPError,
+    url: str,
+) -> HTTPError:
+    return HTTPError(url, e.code, url + ": " + e.reason, e.headers, e.fp)
+
+
 def dl_if_not_modified(
     url: str, lastheaders: Message | None, *, dry_run: bool
 ) -> tuple[bool, HTTPError | urllib.response.addinfourl]:
@@ -88,7 +95,7 @@ def dl_if_not_modified(
     except HTTPError as e:
         if e.status == HTTPStatus.NOT_MODIFIED:
             return False, e
-        raise HTTPError(url, e.code, url + ": " + e.reason, e.headers, e.fp) from e
+        raise err_with_url(e, url) from e
     return True, resp
 
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import UTC, timedelta
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -15,9 +15,17 @@ ISO_TIME_FMT = f"{ISO_DATE_FMT}T{HMS_TIME}"
 ISO_TIME_TZ_FMT = f"{ISO_TIME_FMT}%z"
 
 
-def loadall_csv(fname_glob: str) -> pd.DataFrame:
-    frames = [pd.read_csv(p, sep=";").assign(FileDate=fdate_from_fname(p)) for p in sorted(DATAROOT.glob(fname_glob))]
-    return pd.concat(frames)
+def loadall_csv(fname_glob: str, *, min_distance: timedelta = timedelta(0)) -> pd.DataFrame:
+    frames = []
+    prev_fdate: datetime | None = None
+    for p in sorted(DATAROOT.glob(fname_glob), reverse=True):
+        fdate = fdate_from_fname(p)
+        if prev_fdate is None or prev_fdate - fdate >= min_distance:
+            frames.append(pd.read_csv(p, sep=";").assign(FileDate=fdate))
+        prev_fdate = fdate
+    return pd.concat(
+        frames[::-1],
+    )
 
 
 def load_ww_blverlauf() -> pd.DataFrame:
@@ -111,7 +119,7 @@ class EstiInfo:
     esti_len: int
 
 
-def calc_esti(sariat: pd.Series, *, local_esti=False) -> EstiInfo:
+def calc_esti(sariat: pd.Series, *, local_esti: bool = False) -> EstiInfo:
     # display(sariat)
     pltcol = sariat.name
     sariat = sariat.to_frame()
@@ -157,7 +165,7 @@ def calc_esti(sariat: pd.Series, *, local_esti=False) -> EstiInfo:
         # https://doi.org/10.1371/journal.pcbi.1010115
 
         # Notation translation: t=date (week), d=i_age (lag)
-        compl_after_weeks = 6  # K
+        compl_after_weeks = 10  # K
 
         def calc_local_esti(date, i_age):
             fromdate = date - compl_after_weeks * timedelta(7)

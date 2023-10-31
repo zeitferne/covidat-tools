@@ -165,7 +165,7 @@ def calc_esti(sariat: pd.Series, *, local_esti: bool = False) -> EstiInfo:
         # https://doi.org/10.1371/journal.pcbi.1010115
 
         # Notation translation: t=date (week), d=i_age (lag)
-        compl_after_weeks = 10  # K
+        compl_after_weeks = 8  # K
 
         def calc_local_esti(date, i_age):
             fromdate = date - compl_after_weeks * timedelta(7)

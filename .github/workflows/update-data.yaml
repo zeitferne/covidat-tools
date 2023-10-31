@@ -5,9 +5,9 @@ on:
       force-notebook-update:
         type: boolean
   schedule:
-    - cron: "24 17,3 * * *"
-    # On Tuesdays, do an additional run at 10:8 UTC (12:08 CEST, for sari)
-    - cron: "8 10 * * 2"
+    - cron: "24 17,3 * * *" # 19:24, 5:24 CEST, 18:24, 4:24 CET
+    # On Tuesdays, do an additional run at 10:8 UTC (12:08 CET, for sari)
+    - cron: "8 11 * * 2"
 permissions:
   contents: write
 defaults:

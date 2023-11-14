@@ -82,6 +82,7 @@ jobs:
           if [[ "$FORCE_UPDATE" = true ]] || ! git diff --quiet "$LAST_REV" -- \
                'data/basg-medicineshortage/*_latest.*' \
                'data/covid/abwassermonitoring/*_latest.*' \
+               'data/covid/ages-varianten/Varianten_2*.csv' \
                'data/sozialversicherung-monatsberichte/Mb_*' \
                'data/statat-weekly-deaths/*_latest.*' \
                'data/sari/*_latest.*' \

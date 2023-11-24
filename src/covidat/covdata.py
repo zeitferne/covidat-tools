@@ -116,13 +116,14 @@ class EstiInfo:
     change_agg: pd.DataFrame
     change_agg_cum: pd.DataFrame
     change_agg_inner_cum: pd.DataFrame
+    change_compl: pd.DataFrame
     esti_len: int
 
 
-def calc_esti(sariat: pd.Series, *, local_esti: bool = False) -> EstiInfo:
+def calc_esti(sariat_s: pd.Series, *, local_esti: bool = False) -> EstiInfo:
     # display(sariat)
-    pltcol = sariat.name
-    sariat = sariat.to_frame()
+    pltcol = sariat_s.name
+    sariat = sariat_s.to_frame()
     sariat["age"] = (
         sariat.index.get_level_values("FileDate")
         - sariat.index.get_level_values("Datum").tz_localize("Europe/Vienna").tz_convert(UTC)
@@ -130,6 +131,11 @@ def calc_esti(sariat: pd.Series, *, local_esti: bool = False) -> EstiInfo:
     )
     # sariat["weekno"] = (sariat.index.get_level_values("Datum") - sariat.index.unique("Datum").min()) // timedelta(7)
     sariat["i_age"] = sariat["age"] // timedelta(7)
+    sariat_last = (
+        sariat.xs(sariat.index.unique("FileDate").max(), level="FileDate")
+        .query("i_age >= 10")[pltcol]
+        .loc[lambda v: v > 15]
+    )
 
     # display(sariat)
 
@@ -140,10 +146,13 @@ def calc_esti(sariat: pd.Series, *, local_esti: bool = False) -> EstiInfo:
         by="Datum",
         allow_exact_matches=False,
     )
+    sariat = pd.merge(sariat, sariat_last.rename("last_report"), on="Datum", how="left")
     sariat.set_index(["i_age", "Datum"], inplace=True, verify_integrity=True)
+    # breakpoint()
     # display(sariat)
     sariat["change_rel"] = (sariat[pltcol] / sariat["prev_report"]).shift(1)
     sariat["change_rel"] = sariat["change_rel"].where(np.isfinite(sariat["change_rel"]))
+    sariat["change_compl"] = sariat["last_report"] / sariat[pltcol]
     sariat["change_rel_cum"] = sariat.groupby(["FileDate"])["change_rel"].transform(lambda s: s.cumprod()[::-1])
     # display(sariat)
 
@@ -152,6 +161,8 @@ def calc_esti(sariat: pd.Series, *, local_esti: bool = False) -> EstiInfo:
     change_cum_r = change_rel_r[::-1].cumprod().sort_index().loc[:esti_len]
 
     change_cum_inner_r = sariat.groupby("i_age")["change_rel_cum"].agg(["min", "max", "median"]).sort_index()
+
+    change_compl = sariat.groupby("i_age")["change_compl"].agg(["min", "max", "median", "count"]).query("count >= 3").sort_index()
 
     sariat.sort_index(inplace=True)
 
@@ -199,5 +210,6 @@ def calc_esti(sariat: pd.Series, *, local_esti: bool = False) -> EstiInfo:
         change_agg=change_rel_r,
         change_agg_cum=change_cum_r,
         change_agg_inner_cum=change_cum_inner_r,
+        change_compl=change_compl,
         esti_len=esti_len,
     )

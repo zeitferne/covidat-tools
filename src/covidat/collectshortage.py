@@ -13,6 +13,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from . import util
@@ -155,7 +156,7 @@ def load_veasp_xml(fname: util.Openable, azr: pd.DataFrame, *, only_statagg: boo
                 "Grund": lambda g: " / ".join(g.unique()),
                 "Melder": lambda w: " / ".join(w.unique()),
                 "Zulassungsinhaber": lambda w: " / ".join(w.unique()),
-                "Wirkstoffe": lambda w: pd.unique(", ".join(w.unique()).split(", ")),
+                "Wirkstoffe": lambda w: pd.unique(np.array(", ".join(w.unique()).split(", "))),
                 "Datum_Meldung": lambda s: to_dt(s).min(),
                 "Datum_letzte_Aenderung": lambda s: to_dt(s).max(),
                 "Beginn_Vertriebseinschraenkung": lambda s: to_dt(s).min(),

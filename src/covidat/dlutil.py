@@ -56,10 +56,9 @@ def create_request(url: str, headers: dict[str, str] | None = None) -> Request:
     }
     if headers:
         reqheaders.update(headers)
-    req = Request(url, headers=reqheaders)
-    if urlparse(req.full_url).scheme not in ("http", "https"):
+    if urlparse(url).scheme not in ("http", "https"):
         raise ValueError("Unexpected scheme in URL: " + url)
-    return req
+    return Request(url, headers=reqheaders)  # noqa: S310 (URL scheme is checked)
 
 
 def err_with_url(

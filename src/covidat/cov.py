@@ -135,7 +135,13 @@ def labelend2(
 
 def sortedlabels(ax, mms0, by, cat="Bundesland", fmtval=None):
     hls = list(zip(*ax.get_legend_handles_labels(), strict=True))
-    label_order = mms0.loc[~pd.isna(mms0[by])].groupby(cat).agg({by: "last"}).sort_values(by=by, ascending=False).index
+    label_order = (
+        mms0.loc[~pd.isna(mms0[by])]
+        .groupby(cat, observed=False)
+        .agg({by: "last"})
+        .sort_values(by=by, ascending=False)
+        .index
+    )
     hls = [(handle, label) for handle, label in hls if label in label_order]
     hls.sort(key=lambda hl: np.where(label_order == hl[1]))
     if fmtval:
@@ -227,24 +233,27 @@ def plt_mdiff1(
     else:
         newlabel = "Neu bis " + newstamp
         minuslabel = "Nach unten korrigiert"
+        clnew = "red"
+        clold = color or "k"
+        cldown = "skyblue"
         if rwidth > 1:
             ax.stackplot(
                 newseries.index,
                 oldseries,
                 diffseries.where(diffseries > 0).fillna(0),
                 diffseries.where(diffseries < 0).fillna(0),
-                colors=[color or "k", (1, 0, 0), "skyblue"],
+                colors=[clold, clnew, cldown],
                 lw=0,
                 labels=[oldstamp, newlabel, minuslabel],
             )
         else:
             width = 6 if weekly else None
-            ax.bar(oldseries.index, oldseries, color=color or "k", lw=0, label=oldstamp, width=width)
+            ax.bar(oldseries.index, oldseries, color=clold, lw=0, label=oldstamp, width=width)
             ax.bar(
                 newseries.index,
                 newseries.sub(oldseries, fill_value=0).where(newseries > oldseries),
                 bottom=oldseries,
-                color=(1, 0, 0),
+                color=clnew,
                 lw=0,
                 label=newlabel,
                 width=width,
@@ -253,7 +262,7 @@ def plt_mdiff1(
                 newseries.index,
                 newseries.sub(oldseries, fill_value=0).where(newseries < oldseries),
                 bottom=oldseries,
-                color="skyblue",
+                color=cldown,
                 lw=0,
                 label=minuslabel,
                 width=width,

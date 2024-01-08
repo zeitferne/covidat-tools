@@ -162,7 +162,7 @@ def calc_esti(sariat_s: pd.Series, *, local_esti: bool = False) -> EstiInfo:
     esti_len = 10
     change_cum_r = change_rel_r[::-1].cumprod().sort_index().loc[:esti_len]
 
-    change_cum_inner_r = sariat.groupby("i_age")["change_rel_cum"].agg(["min", "max", "median"]).sort_index()
+    change_cum_inner_r = sariat.loc[sariat[pltcol] >= 3].groupby("i_age")["change_rel_cum"].agg(["min", "max", "median"]).sort_index()
 
     change_compl = (
         sariat.groupby("i_age")["change_compl"].agg(["min", "max", "median", "count"]).query("count >= 3").sort_index()

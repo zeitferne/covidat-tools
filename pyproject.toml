@@ -36,7 +36,7 @@ notebooks = [
   "seaborn~=0.13.0",
   "scipy~=1.11.4",
   "jupyterlab~=4.0.9",
-  "nbconvert~=7.11.0"
+  "nbconvert~=7.13.1"
 ]
 
 [project.scripts]

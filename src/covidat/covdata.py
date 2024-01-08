@@ -152,17 +152,18 @@ def calc_esti(sariat_s: pd.Series, *, local_esti: bool = False) -> EstiInfo:
     sariat.set_index(["i_age", "Datum"], inplace=True, verify_integrity=True)
     # breakpoint()
     # display(sariat)
-    sariat["change_rel"] = (sariat[pltcol] / sariat["prev_report"]).shift(1)
+    sariat["change_rel"] = (sariat.where(sariat[pltcol] >= 3)[pltcol] / sariat["prev_report"]).shift(1)
     sariat["change_rel"] = sariat["change_rel"].where(np.isfinite(sariat["change_rel"]))
-    sariat["change_compl"] = sariat["last_report"] / sariat[pltcol]
     sariat["change_rel_cum"] = sariat.groupby(["FileDate"])["change_rel"].transform(lambda s: s.cumprod()[::-1])
+    sariat["change_compl"] = sariat["last_report"] / sariat[pltcol]
     # display(sariat)
 
-    change_rel_r = sariat.groupby("i_age")["change_rel"].agg(["min", "max", "median"]).sort_index()
+
+    change_rel_r = sariat.loc[np.isfinite(sariat["change_rel"])].groupby("i_age")["change_rel"].agg(["min", "max", "median"]).sort_index()
     esti_len = 10
     change_cum_r = change_rel_r[::-1].cumprod().sort_index().loc[:esti_len]
 
-    change_cum_inner_r = sariat.loc[sariat[pltcol] >= 3].groupby("i_age")["change_rel_cum"].agg(["min", "max", "median"]).sort_index()
+    change_cum_inner_r = sariat.loc[np.isfinite(sariat["change_rel_cum"])].groupby("i_age")["change_rel_cum"].agg(["min", "max", "median"]).sort_index()
 
     change_compl = (
         sariat.groupby("i_age")["change_compl"].agg(["min", "max", "median", "count"]).query("count >= 3").sort_index()

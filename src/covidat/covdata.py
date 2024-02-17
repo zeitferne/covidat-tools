@@ -152,7 +152,7 @@ def calc_esti(sariat_s: pd.Series, *, local_esti: bool = False) -> EstiInfo:
     sariat.set_index(["i_age", "Datum"], inplace=True, verify_integrity=True)
     # breakpoint()
     # display(sariat)
-    sariat["change_rel"] = (sariat.where(sariat[pltcol] >= 3)[pltcol] / sariat["prev_report"]).shift(1)
+    sariat["change_rel"] = (sariat.where((sariat[pltcol] >= 3) & (sariat["prev_report"] >= 3))[pltcol] / sariat["prev_report"]).shift(1)
     sariat["change_rel"] = sariat["change_rel"].where(np.isfinite(sariat["change_rel"]))
     sariat["change_rel_cum"] = sariat.groupby(["FileDate"])["change_rel"].transform(lambda s: s.cumprod()[::-1])
     sariat["change_compl"] = sariat["last_report"] / sariat[pltcol]

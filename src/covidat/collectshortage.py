@@ -74,7 +74,7 @@ def load_azr() -> pd.DataFrame:
         logger.info("Regenerating ASP-Register cache...")
         srcs = []
         aspdir = util.DATAROOT / "basg-medicineshortage"
-        for srcname in aspdir.glob("ASP-Register_2*.xlsx"):
+        for srcname in sorted(aspdir.glob("ASP-Register_2*.xlsx")):
             srcs.append(pd.read_excel(srcname, header=0))
         azr = pd.concat(srcs)
         azr.to_csv(cachefile, index=False)

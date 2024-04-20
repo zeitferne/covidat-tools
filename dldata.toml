@@ -78,8 +78,8 @@ default_file_extension = ".json"
 
   [[dlsets]]
   urls = [
-    "https://www.virologie.meduniwien.ac.at/fileadmin/virologie/files/Sars/sars_bundesland_2020.jpg",
-    "https://www.virologie.meduniwien.ac.at/fileadmin/virologie/files/Sars/sars_woche_2020.jpg"
+    "https://viro.meduniwien.ac.at/fileadmin/content/OE/virologie/dokumente/SARS-CoV-2/sars_bundesland_2020.jpg",
+    "https://viro.meduniwien.ac.at/fileadmin/content/OE/virologie/dokumente/SARS-CoV-2/sars_woche_2020.jpg"
   ]
   dir = "covid/meduniwien"
 
@@ -92,8 +92,8 @@ default_file_extension = ".json"
 
   [[dlsets]]
   urls = [
-    "https://www.ages.at/download/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE2MDk0NTkyMDAsImV4cCI6NDA3MDkwODgwMCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW5cL0FHRVNfMjAyMlwvMl9NRU5TQ0hcL0tyYW5raGVpdFwvS3JhbmtoZWl0c2VycmVnZXJcL01hc2VyblwvTWFzZXJuX1RhYmVsbGUuY3N2IiwicGFnZSI6MjUyOH0.nau1aB33Aa1_AhnX7HPf9GPOzpKA_u_qsnQmxEyTvEM/Masern_Tabelle.csv",
-    "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/masern",
+    "https://www.ages.at/download/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE2MDk0NTkyMDAsImV4cCI6NDA3MDkwODgwMCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW4vQUdFU18yMDIyLzJfTUVOU0NIL0tyYW5raGVpdC9LcmFua2hlaXRzZXJyZWdlci9NYXNlcm4vTWFzZXJuX1RhYmVsbGVfMjAyNC5jc3YiLCJwYWdlIjoyNTI4fQ.JvQpmMusklkIOhBtLG7UDxs6og9Pcf30_sLV-tTMFLw/Masern_Tabelle_2024.csv",
+    "https://www.ages.at/download/sdl-eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE2MDk0NTkyMDAsImV4cCI6NDA3MDkwODgwMCwidXNlciI6MCwiZ3JvdXBzIjpbMCwtMV0sImZpbGUiOiJmaWxlYWRtaW4vQUdFU18yMDIyLzJfTUVOU0NIL0tyYW5raGVpdC9LcmFua2hlaXRzZXJyZWdlci9NYXNlcm4vTWFzZXJuX1RhYmVsbGVfMjAyMy5jc3YiLCJwYWdlIjoyNTI4fQ.jZA_L6nUjk9HuEYtXzJTgeYIcDENmQlpmrBgJ-xKLiE/Masern_Tabelle_2023.csv",
     "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/pneumokokken",
     "https://www.ages.at/mensch/krankheit/krankheitserreger-von-a-bis-z/grippe",
   ]

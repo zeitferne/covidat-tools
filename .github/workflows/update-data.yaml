@@ -101,7 +101,7 @@ jobs:
           export TOOLS_DATE=`git log -1 --format="%aD"`
 
           python -m pip install -U pip
-          pip install hatch
+          pip install 'hatch~=1.9.0'
           hatch -v -e notebooks run sh -exc \
             'collectshortage && collecthydro && python -m covidat.collectsvat'
 

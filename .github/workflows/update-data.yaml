@@ -79,6 +79,8 @@ jobs:
 
           cd "$COVDATA_REPO_ROOT"
 
+          # For :^ (aka :! aka :(exclude)) see https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
+
           if [[ "$FORCE_UPDATE" = true ]] || ! git diff --quiet "$LAST_REV" -- \
                'data/basg-medicineshortage/*_latest.*' \
                'data/covid/abwassermonitoring/*_latest.*' \
@@ -86,7 +88,8 @@ jobs:
                'data/sozialversicherung-monatsberichte/Mb_*' \
                'data/statat-weekly-deaths/*_latest.*' \
                'data/sari/*_latest.*' \
-               ':^data/covid/abwassermonitoring/tirol/**'
+               ':^data/covid/abwassermonitoring/tirol/**' \
+               ':^data/covid/abwassermonitoring/wien/**' \
           then
             echo "updated=1" >> "$GITHUB_OUTPUT"
           fi

@@ -128,7 +128,7 @@ def get_dl_base_fname(url: str, cfg: DlCfg) -> tuple[str, str]:
 
     fext = fext or cfg.default_file_extension or ""
     fstem = cfg.fname_format.format(fstem)
-    if not is_safe_fname(fstem) and not is_safe_fname(fname):
+    if not is_safe_fname(fstem) or not is_safe_fname(fname):
         raise ValueError("Unsafe filename rejected in: " + url)
     return fstem, fext
 
@@ -371,7 +371,7 @@ def dl_at_ogd_set(meta: dict[str, Any], dlcfg: DlCfg, *, exclude_url: Callable[[
 
 
 _conservative_save_rng = "A-Za-z0-9"
-_always_safe_rng = f"-{_conservative_save_rng}_öÖäÄüÜß+()=!,;"  # Never safe: ?/\
+_always_safe_rng = f"-{_conservative_save_rng}_ öÖäÄüÜß+()=!,;"  # Never safe: ?/\
 # Careful with dots. We need to allow them (almost every filename contains them),
 # but they must not occur more than once in sequence
 is_safe_fname = re.compile(fr"^(?:\.?[{_always_safe_rng}])*\.?[{_conservative_save_rng}]$").fullmatch

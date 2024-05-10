@@ -132,7 +132,7 @@ def load_veasp_xml(fname: util.Openable, azr: pd.DataFrame, *, only_statagg: boo
         suffixes=("", "_y"),
     )
     # display(veasp)
-    veasp["Status"].replace("Nicht verfügbar", "nicht verfügbar", inplace=True)
+    veasp.replace({"Status": "Nicht verfügbar"}, "nicht verfügbar", inplace=True)
     veasp["Verwendung"] = veasp["Verwendung"].combine_first(veasp["Verwendung_y"])
     naveasp = veasp[pd.isna(veasp["Verwendung"])]
     if len(naveasp) > 0:

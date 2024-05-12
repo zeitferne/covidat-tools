@@ -1730,7 +1730,7 @@ def set_percent_opts(ax: plt.Axes, freq=None, decimals=0, xmax=1):
         ax.get_yaxis().set_major_locator(matplotlib.ticker.MultipleLocator(freq))
 
 
-def set_date_opts(ax: plt.Axes, xs: pd.Series = None, showyear=None, showday=None, week_always=False, autoyear=False):
+def set_date_opts(ax: plt.Axes, xs: pd.Series = None, showyear=None, showday=None, week_always=False, autoyear=False, labelrot=False):
     n = (
         ax.get_xlim()[1] - ax.get_xlim()[0]
         if xs is None
@@ -1767,6 +1767,8 @@ def set_date_opts(ax: plt.Axes, xs: pd.Series = None, showyear=None, showday=Non
             left=matplotlib.dates.date2num(xs.min()) - 0.5,
             right=matplotlib.dates.date2num(xs.max()) + 0.5,
         )
+    if labelrot:
+        plt.setp(ax.get_xticklabels(), rotation=40, ha='right', rotation_mode='anchor')
 
 
 def plt_cat_dists(

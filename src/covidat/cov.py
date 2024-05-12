@@ -2140,13 +2140,12 @@ DS_BMG = "BMSGPK"
 DS_STAT = "statistik.at"
 DS_BOTH = f"{DS_AGES}, {DS_BMG}"
 
-
-def stampit(fig: plt.Figure, dsource: str = DS_AGES):
+def figfineprint(fig: plt.Figure, s: str):
     # return
     fig.text(
         0,
         0.1,
-        f"Rohdatenquelle: {dsource} | Darstellung & Bearbeitung: @zeitferne",
+        s,
         va="top",
         in_layout=False,
         size=6,
@@ -2154,6 +2153,9 @@ def stampit(fig: plt.Figure, dsource: str = DS_AGES):
         transform=fig.dpi_scale_trans,
     )
 
+def stampit(fig: plt.Figure, dsource: str = DS_AGES):
+    # return
+    figfineprint(f"Rohdatenquelle: {dsource} | Darstellung & Bearbeitung: @zeitferne")
 
 def load_bev(*, ages_age_groups=True) -> pd.DataFrame:
     result = pd.read_csv(

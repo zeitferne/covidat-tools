@@ -2155,7 +2155,7 @@ def figfineprint(fig: plt.Figure, s: str):
 
 def stampit(fig: plt.Figure, dsource: str = DS_AGES):
     # return
-    figfineprint(f"Rohdatenquelle: {dsource} | Darstellung & Bearbeitung: @zeitferne")
+    figfineprint(fig, f"Rohdatenquelle: {dsource} | Darstellung & Bearbeitung: @zeitferne")
 
 def load_bev(*, ages_age_groups=True) -> pd.DataFrame:
     result = pd.read_csv(

@@ -6,8 +6,8 @@ on:
         type: boolean
   schedule:
     - cron: "24 17,3 * * *" # 19:24, 5:24 CEST, 18:24, 4:24 CET
-    # On Tuesdays, do an additional run at 10:8 UTC (12:08 CET, for sari)
-    - cron: "8 11 * * 2"
+    # On Tuesdays, do an additional run at 10:8 UTC (12:08 CEST, for sari)
+    - cron: "8 10 * * 2"
 permissions:
   contents: write
 defaults:
@@ -82,7 +82,6 @@ jobs:
           # For :^ (aka :! aka :(exclude)) see https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
 
           if [[ "$FORCE_UPDATE" = true ]] || ! git diff --quiet "$LAST_REV" -- \
-               'data/basg-medicineshortage/*_latest.*' \
                'data/covid/abwassermonitoring/*_latest.*' \
                'data/covid/ages-varianten/Varianten_2*.csv' \
                'data/sozialversicherung-monatsberichte/Mb_*' \
@@ -90,6 +89,7 @@ jobs:
                'data/sari/*_latest.*' \
                ':^data/covid/abwassermonitoring/tirol/**' \
                ':^data/covid/abwassermonitoring/wien/**'
+               'data/covid/abwassermonitoring/wien/wienww_cov_latest.csv'
           then
             echo "updated=1" >> "$GITHUB_OUTPUT"
           fi

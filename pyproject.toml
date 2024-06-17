@@ -21,6 +21,7 @@ classifiers = [
 ]
 dependencies = [
   "pandas~=2.2.2",
+  "numpy~=1.26.4",
   "dateparser~=1.2.0",
   "lxml~=5.2.0",
   "beautifulsoup4~=4.12.2",

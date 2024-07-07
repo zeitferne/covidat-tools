@@ -20,7 +20,6 @@ default_file_extension = ".csv"
   preset = "wienabwasser"
   urls = [
      "https://stp.wien.gv.at/viennaviz/anonymous/chart/2cbc142d-d1c0-4c43-89f4-54e4d9d5223e/dataSelection?includeBom=0",
-
   ]
   fname_format = "wienww_cov"
 
@@ -28,7 +27,6 @@ default_file_extension = ".csv"
   preset = "wienabwasser"
   urls = [
      "https://stp.wien.gv.at/viennaviz/anonymous/chart/2a37abdb-544a-445e-bfd6-a2e8ecbaacdf/dataSelection?includeBom=0",
-
   ]
   fname_format = "wienww_flu"
 
@@ -36,7 +34,6 @@ default_file_extension = ".csv"
   preset = "wienabwasser"
   urls = [
      "https://stp.wien.gv.at/viennaviz/anonymous/chart/3bfafd07-8f89-47a7-877f-22d4ec4ac346/dataSelection?includeBom=0",
-
   ]
   fname_format = "wienww_rsv"
 

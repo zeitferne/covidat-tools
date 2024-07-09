@@ -156,8 +156,8 @@ default_file_extension = ".csv"
 
   [[dlsets]]
   urls = [
-    "https://opendata.sozialversicherung.at/sari/SARI_Region_Krankenanstalt_v202307.csv?q=now",
-    "https://opendata.sozialversicherung.at/sari/SARI_Wohnregion_Patient_v202307.csv?q=now",
+    "https://opendata-files.sozialversicherung.at/sari/SARI_Region_Krankenanstalt_v202307.csv?q=now",
+    "https://opendata-files.sozialversicherung.at/sari/SARI_Wohnregion_Patient_v202307.csv?q=now",
   ]
   dir = "sari"
 

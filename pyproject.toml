@@ -16,28 +16,28 @@ authors = [
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-  "pandas~=2.2.2",
-  "numpy~=1.26.4",
-  "dateparser~=1.2.0",
-  "lxml~=5.2.0",
-  "beautifulsoup4~=4.12.2",
-  "openpyxl~=3.1.2",
-  "xlrd~=2.0.1",
+  "pandas",
+  "numpy",
+  "dateparser",
+  "lxml",
+  "beautifulsoup4",
+  "openpyxl",
+  "xlrd",
+  "odfpy"
 ]
 
 [project.optional-dependencies]
 notebooks = [
-  "odfpy~=1.4.1",
-  "colorcet~=3.1.0",
-  "matplotlib~=3.8.4",
-  "seaborn~=0.13.2",
-  "scipy~=1.13.0",
-  "jupyterlab~=4.2.0",
-  "nbconvert~=7.16.4"
+  "colorcet",
+  "matplotlib",
+  "seaborn",
+  "scipy",
+  "jupyterlab",
+  "nbconvert"
 ]
 
 [project.scripts]
@@ -51,6 +51,9 @@ Documentation = "https://github.com/zeitferne/covidat-tools#readme"
 Issues = "https://github.com/zeitferne/covidat-tools/issues"
 Source = "https://github.com/zeitferne/covidat-tools"
 
+[tool.hatch.env]
+requires = ["hatch-pip-compile"]
+
 [tool.hatch.version]
 path = "src/covidat/__about__.py"
 
@@ -58,6 +61,10 @@ path = "src/covidat/__about__.py"
 packages = ["src/covidat"]
 
 [tool.hatch.envs.default]
+pip-compile-resolver = "uv"
+pip-compile-installer = "uv"
+installer = "uv"
+type = "pip-compile"
 dependencies = [
   "coverage[toml]>=6.5",
   "pytest",
@@ -76,19 +83,24 @@ cov = [
 ]
 
 [tool.hatch.envs.notebooks]
+pip-compile-resolver = "uv"
+pip-compile-installer = "uv"
+installer = "uv"
+type = "pip-compile"
+pip-compile-constraint = "default"
 template = "notebooks"
 features = ["notebooks"]
 
 [tool.hatch.envs.notebooks.scripts]
 serve = "jupyter lab notebooks/monitoring.ipynb"
 
-[[tool.hatch.envs.all.matrix]]
-python = ["3.11"]
-
 [tool.hatch.envs.lint]
 detached = true
+pip-compile-resolver = "uv"
+pip-compile-installer = "uv"
+installer = "uv"
+type = "pip-compile"
 dependencies = [
-  "black[jupyter]>=23.1.0",
   "mypy>=1.0.0",
   "ruff>=0.0.243",
 ]

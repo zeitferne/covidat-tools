@@ -193,9 +193,12 @@ def calc_esti(sariat_s: pd.Series, *, local_esti: bool = False) -> EstiInfo:
             if older.sum() == 0 or len(older) != len(daterng):
                 # print("short", older)
                 return np.nan
-            newidxs = list(zip((date - daterng) // timedelta(7), daterng, strict=True))
+            newidxs = list(zip((date - daterng) // pd.Timedelta(7, "D"), daterng, strict=True))
             # print(f"{newidxs=}")
-            newer = sariat.loc[newidxs, pltcol]
+            try:
+                newer = sariat.loc[newidxs, pltcol]
+            except KeyError:
+                return np.nan # TODO: There might be something broken with the indexes in case of gaps
             if len(newer) != len(daterng):
                 return np.nan
             # display(older.rename("older"), newer.rename("newer"))

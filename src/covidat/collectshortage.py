@@ -69,7 +69,7 @@ def norm_name(name: "pd.Series[str]") -> "pd.Series[str]":
 def load_azr() -> pd.DataFrame:
     cachefile = util.COLLECTROOT / "medshort/ASP-Register.csv"
     try:
-        azr = pd.read_csv(cachefile)
+        azr = pd.read_csv(cachefile, usecols=["Zulassungsnummer", "Name", "Verwendung", ])
     except FileNotFoundError:
         logger.info("Regenerating ASP-Register cache...")
         srcs = []

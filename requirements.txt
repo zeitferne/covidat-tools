@@ -15,8 +15,6 @@
 
 beautifulsoup4==4.12.3
     # via hatch.envs.default
-colorama==0.4.6
-    # via pytest
 coverage==7.6.10
     # via hatch.envs.default
 dateparser==1.2.0
@@ -60,9 +58,7 @@ six==1.17.0
 soupsieve==2.6
     # via beautifulsoup4
 tzdata==2024.2
-    # via
-    #   pandas
-    #   tzlocal
+    # via pandas
 tzlocal==5.2
     # via dateparser
 xlrd==2.0.1

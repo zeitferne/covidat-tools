@@ -37,6 +37,12 @@ def load_ks(pth: Path) -> pd.DataFrame:
     ks.dropna(thresh=3, inplace=True)
     if pd.isna(ks["insurer"].iloc[0]):
         raise ValueError("Missing insurer")
+    na_ids = ks["id"].map(pd.isna)
+    if na_ids.any():
+        if na_ids.all() and len(ks) == 24:
+            ks["id"] = np.arange(1, len(ks) + 1)
+        else:
+            raise ValueError("Missing id")
     ks["date"] = (ks["id"] % 2).map(lambda odd: pd.Period(year=year if odd else year - 1, month=month, freq="M"))
     return ks
 

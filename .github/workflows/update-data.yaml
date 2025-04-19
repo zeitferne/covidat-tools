@@ -82,13 +82,11 @@ jobs:
           # For :^ (aka :! aka :(exclude)) see https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
 
           if [[ "$FORCE_UPDATE" = true ]] || ! git diff --quiet "$LAST_REV" -- \
-               'data/covid/abwassermonitoring/*_latest.*' \
-               'data/covid/ages-varianten/Varianten_2*.csv' \
+               'data/covid/abwassermonitoring/blverlauf_latest.json' \
+               'data/covid/abwassermonitoring/natmon_01_latest.json' \
                'data/sozialversicherung-monatsberichte/Mb_*' \
                'data/statat-weekly-deaths/*_latest.*' \
                'data/sari/*_latest.*' \
-               ':^data/covid/abwassermonitoring/tirol/**' \
-               ':^data/covid/abwassermonitoring/wien/**' \
                'data/covid/abwassermonitoring/wien/wienww_cov_latest.csv'
           then
             echo "updated=1" >> "$GITHUB_OUTPUT"

@@ -310,7 +310,7 @@ seaborn==0.13.2
     # via hatch.envs.notebooks
 send2trash==1.8.3
     # via jupyter-server
-setuptools==78.1.0
+setuptools==78.1.1
     # via jupyterlab
 six==1.17.0
     # via

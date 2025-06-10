@@ -290,7 +290,7 @@ regex==2024.11.6
     # via
     #   -c requirements.txt
     #   dateparser
-requests==2.32.3
+requests==2.32.4
     # via jupyterlab-server
 rfc3339-validator==0.1.4
     # via

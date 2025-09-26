@@ -153,7 +153,7 @@ jupyter-server==2.16.0
     #   notebook-shim
 jupyter-server-terminals==0.5.3
     # via jupyter-server
-jupyterlab==4.4.2
+jupyterlab==4.4.8
     # via hatch.envs.notebooks
 jupyterlab-pygments==0.3.0
     # via nbconvert

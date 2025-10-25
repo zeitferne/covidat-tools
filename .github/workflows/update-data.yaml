@@ -101,8 +101,9 @@ jobs:
 
           export TOOLS_DATE=`git log -1 --format="%aD"`
 
-          python -m pip install -U pip
-          pip install 'hatch~=1.14.1' 'click<8.3'
+          # hatch-pip-compile breaks due to InstallRequirement.use_pep517 removal in pip 25.3
+          python -m pip install -U 'pip<25.3'
+          pip install 'hatch~=1.15.1'
           hatch -v -e notebooks run sh -exc \
             'collectshortage && collecthydro && python -m covidat.collectsvat'
 

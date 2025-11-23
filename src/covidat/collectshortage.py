@@ -79,7 +79,7 @@ def load_azr() -> pd.DataFrame:
         azr = pd.concat(srcs)
         azr.to_csv(cachefile, index=False)
         logger.info("Regenerated cache at %s", cachefile)
-    azr["Zulassungsnummer"] = azr["Zulassungsnummer"].str.strip()
+    azr["Zulassungsnummer"] = azr["Zulassungsnummer"].str.strip().fillna("")
     azr.drop_duplicates("Zulassungsnummer", keep="last", inplace=True)
     msk = azr["Zulassungsnummer"].str.match("EU/.+[-,]")
     azr0 = azr.loc[msk].copy()

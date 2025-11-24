@@ -24,7 +24,7 @@ jobs:
       COVAT_COLLECT_ROOT: ${{github.workspace}}/tmpdata
       REV_PATH: "export/data-rev.txt"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
@@ -33,7 +33,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Load old data
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "zeitferne/covidat-data"
           path: ${{ env.COVDATA_REPO_ROOT }}
@@ -62,7 +62,7 @@ jobs:
       - name: checkout gh-pages
         id: checkout-pages
         if: ${{ inputs.force-notebook-update || steps.upload.outputs.updated }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: notebooks/gh-pages
           ref: gh-pages

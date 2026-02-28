@@ -101,9 +101,7 @@ jobs:
 
           export TOOLS_DATE=`git log -1 --format="%aD"`
 
-          # hatch-pip-compile breaks due to InstallRequirement.use_pep517 removal in pip 25.3
-          python -m pip install -U 'pip<25.3'
-          pip install 'hatch~=1.15.1'
+          pip install 'hatch~=1.16.5'
           hatch -v -e notebooks run sh -exc \
             'collectshortage && collecthydro && python -m covidat.collectsvat'
 

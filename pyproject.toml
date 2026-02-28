@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.14"]
+requires = ["hatchling>=1.29.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -52,7 +52,7 @@ Issues = "https://github.com/zeitferne/covidat-tools/issues"
 Source = "https://github.com/zeitferne/covidat-tools"
 
 [tool.hatch.env]
-requires = ["hatch-pip-compile"]
+requires = ["hatch-pip-compile>=1.11.6"]
 
 [tool.hatch.version]
 path = "src/covidat/__about__.py"

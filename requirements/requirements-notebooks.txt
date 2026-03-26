@@ -291,7 +291,7 @@ regex==2025.11.3
     # via
     #   -c requirements.txt
     #   dateparser
-requests==2.32.5
+requests==2.33.0
     # via jupyterlab-server
 rfc3339-validator==0.1.4
     # via

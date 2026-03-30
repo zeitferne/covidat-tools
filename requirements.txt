@@ -41,7 +41,7 @@ pandas==2.3.3
     # via hatch.envs.default
 pluggy==1.6.0
     # via pytest
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pytest==9.0.2
     # via hatch.envs.default

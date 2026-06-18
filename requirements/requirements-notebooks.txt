@@ -44,7 +44,7 @@ beautifulsoup4==4.14.3
     #   -c requirements.txt
     #   hatch.envs.notebooks
     #   nbconvert
-bleach==6.3.0
+bleach==6.4.0
     # via nbconvert
 certifi==2025.11.12
     # via

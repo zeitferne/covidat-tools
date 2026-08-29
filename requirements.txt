@@ -9,15 +9,17 @@
 # - numpy
 # - odfpy
 # - openpyxl
-# - pandas
+# - pandas<3
 # - xlrd
 #
 
-beautifulsoup4==4.14.3
+beautifulsoup4==4.15.0
     # via hatch.envs.default
-coverage==7.13.0
+colorama==0.4.6
+    # via pytest
+coverage==7.14.3
     # via hatch.envs.default
-dateparser==1.2.2
+dateparser==1.4.1
     # via hatch.envs.default
 defusedxml==0.7.1
     # via odfpy
@@ -25,9 +27,9 @@ et-xmlfile==2.0.0
     # via openpyxl
 iniconfig==2.3.0
     # via pytest
-lxml==6.1.0
+lxml==6.1.1
     # via hatch.envs.default
-numpy==2.3.5
+numpy==2.5.0
     # via
     #   hatch.envs.default
     #   pandas
@@ -35,7 +37,7 @@ odfpy==1.4.1
     # via hatch.envs.default
 openpyxl==3.1.5
     # via hatch.envs.default
-packaging==25.0
+packaging==26.2
     # via pytest
 pandas==2.3.3
     # via hatch.envs.default
@@ -43,27 +45,29 @@ pluggy==1.6.0
     # via pytest
 pygments==2.20.0
     # via pytest
-pytest==9.0.3
+pytest==9.1.1
     # via hatch.envs.default
 python-dateutil==2.9.0.post0
     # via
     #   dateparser
     #   pandas
-pytz==2025.2
+pytz==2026.2
     # via
     #   dateparser
     #   pandas
-regex==2025.11.3
+regex==2026.6.28
     # via dateparser
 six==1.17.0
     # via python-dateutil
-soupsieve==2.8.1
+soupsieve==2.8.4
     # via beautifulsoup4
 typing-extensions==4.15.0
     # via beautifulsoup4
-tzdata==2025.3
-    # via pandas
-tzlocal==5.3.1
+tzdata==2026.2
+    # via
+    #   pandas
+    #   tzlocal
+tzlocal==5.4.4
     # via dateparser
 xlrd==2.0.2
     # via hatch.envs.default

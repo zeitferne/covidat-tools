@@ -150,6 +150,7 @@ def load_veasp_xml(fname: util.Openable, azr: pd.DataFrame, *, only_statagg: boo
 
             def to_dt(s: "pd.Series[str]") -> "pd.Series[pd.Timestamp]":
                 s = s.str.replace("(?:0204|0024)-", "2024-", regex=True)
+                s = s.str.replace("(?:0206)-", "2026-", regex=True)
                 return pd.to_datetime(s, format="%Y-%m-%d")
 
             veasp.loc[veasp["Status"] == "verfügbar", "Datum_voraussichtliche_Wiederbelieferung"] = None

@@ -323,7 +323,7 @@ six==1.17.0
     #   -c requirements.txt
     #   python-dateutil
     #   rfc3339-validator
-soupsieve==2.8.4
+soupsieve==2.9
     # via
     #   -c requirements.txt
     #   beautifulsoup4
